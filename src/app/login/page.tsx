@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { authErrorMessage, networkErrorMessage } from "@/lib/auth-errors";
 
@@ -16,6 +16,15 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [canResend, setCanResend] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("error") === "auth") {
+      setStep("existing");
+      setCanResend(true);
+      setMessage("De inloglink of bevestiging is ongeldig of verlopen. Vraag hieronder een nieuwe bevestigingsmail aan.");
+    }
+  }, []);
 
   function go(next: Step) {
     setStep(next);
@@ -139,7 +148,7 @@ export default function LoginPage() {
           </form>
           {message && <p role="status">{message}</p>}
           {canResend && (
-            <button type="button" onClick={handleResend} disabled={busy}>
+            <button type="button" onClick={handleResend} disabled={busy || !email}>
               Bevestigingsmail opnieuw sturen
             </button>
           )}
