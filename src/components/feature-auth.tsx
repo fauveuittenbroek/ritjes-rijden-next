@@ -37,7 +37,6 @@ export function useFeatureAuth() {
   return { client, userId, loading, error };
 }
 
-export type Circle = { id: string; name: string; invite_code: string };
 export type RideRequest = {
   id: string; type: "goederen" | "personen"; item_description: string | null;
   num_people: number | null; note: string | null; vertrekplaats: string; bestemming: string;
