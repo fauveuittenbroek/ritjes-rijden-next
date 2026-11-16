@@ -27,7 +27,11 @@ export default function FeedPage() {
   if (authError) return <main><p role="alert">{authError}</p></main>;
   if (loading || !userId) return <main><p>Laden…</p></main>;
   return <main className="page"><h1>Overzicht</h1>
-    <nav><Link href="/rides">Alle ritjes</Link> {" · "}<Link href="/requests/new">Nieuw verzoek</Link> {" · "}<Link href="/account">Account</Link></nav>
+    <nav className="home-actions">
+      <Link href="/rides" className="button-primary">Bekijk alle ritjes</Link>
+      <Link href="/requests/new" className="button-secondary">Nieuw verzoek</Link>
+      <Link href="/account" className="button-secondary">Account</Link>
+    </nav>
     {error && <p role="alert">{error}</p>}
     {pending ? <p>Laden…</p> : <section><h2>Verzoeken</h2>
       {requests.length ? <ul>{requests.map(request => <li key={request.id}><Link href={`/rides/${request.id}`}>
