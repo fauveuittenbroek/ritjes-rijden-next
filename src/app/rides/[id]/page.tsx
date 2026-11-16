@@ -7,6 +7,7 @@ import { loadRide, publicPhotoUrl } from "@/lib/rides-server";
 import { geocodePlace } from "@/lib/geocode";
 import { distanceBetween } from "@/lib/distance";
 import { AcceptRideButton } from "@/components/accept-ride-button";
+import { ReleaseRideButton } from "@/components/release-ride-button";
 import { LiveMapLoader } from "@/components/live-map-loader";
 import { RideThumb } from "@/components/ride-thumb";
 
@@ -77,7 +78,7 @@ export default async function RidePage({ params }: { params: Params }) {
           {ride.origin} → {ride.destination}
         </p>
         <p>
-          <strong>Status:</strong> {ride.status === "open" ? "Open" : "Ingevuld"}
+          <strong>Status:</strong> {ride.status === "open" ? "Open" : "Geaccepteerd"}
         </p>
 
         <div className="ride-actions">
@@ -143,7 +144,16 @@ export default async function RidePage({ params }: { params: Params }) {
           ) : ride.demo ? (
             <p>Dit is een voorbeeldopdracht; alleen echte opdrachten kun je accepteren.</p>
           ) : ride.status !== "open" ? (
-            <p>Dit ritje is al geaccepteerd.</p>
+            ride.isClaimer || ride.isCreator ? (
+              <>
+                <p>{ride.isClaimer ? "Je hebt dit ritje geaccepteerd." : "Dit ritje is geaccepteerd."}</p>
+                <ReleaseRideButton requestId={ride.id} />
+              </>
+            ) : (
+              <p>Dit ritje is geaccepteerd.</p>
+            )
+          ) : ride.isCreator ? (
+            <p>Dit is je eigen verzoek; je kunt het niet zelf accepteren.</p>
           ) : (
             <AcceptRideButton requestId={ride.id} />
           )}

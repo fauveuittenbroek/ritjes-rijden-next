@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Circle, useFeatureAuth } from "@/components/feature-auth";
+import { useFeatureAuth } from "@/components/feature-auth";
 
 type RequestType = "goederen" | "personen";
 
@@ -36,8 +35,6 @@ export function RequestForm() {
   const { client, userId, loading: authLoading, error: authError } = useFeatureAuth();
   const router = useRouter();
 
-  const [circles, setCircles] = useState<Circle[]>([]);
-  const [circlesLoading, setCirclesLoading] = useState(true);
   const [type, setType] = useState<RequestType>("goederen");
   const [item, setItem] = useState("");
   const [numPeople, setNumPeople] = useState("");
@@ -54,36 +51,11 @@ export function RequestForm() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (!userId) return;
-    let active = true;
-    (async () => {
-      try {
-        const { data } = await client
-          .from("circle_members")
-          .select("circles(id,name,invite_code)")
-          .eq("user_id", userId);
-        if (!active) return;
-        setCircles((data ?? []).flatMap((row) => (row.circles ? [row.circles as unknown as Circle] : [])));
-      } catch {
-      } finally {
-        if (active) setCirclesLoading(false);
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, [client, userId]);
-
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy || !userId) return;
     setError("");
 
-    if (!circles.length) {
-      setError("Maak eerst een groep aan; een verzoek wordt met je groepen gedeeld.");
-      return;
-    }
     if (!origin.trim() || !destination.trim()) {
       setError("Vul een vertrekplaats en bestemming in.");
       return;
@@ -135,7 +107,7 @@ export function RequestForm() {
           deadline_date: type === "goederen" ? deadline || null : null,
           photo_path: photoPath,
         },
-        p_circle_ids: circles.map((circle) => circle.id),
+        p_circle_ids: [],
       });
 
       if (rpcError || !data) {
@@ -294,14 +266,7 @@ export function RequestForm() {
         />
       </div>
 
-      <p className="request-groups">
-        {circlesLoading
-          ? "Je groepen laden…"
-          : circles.length
-            ? `Wordt gedeeld met: ${circles.map((circle) => circle.name).join(", ")}`
-            : "Je bent nog geen lid van een groep. Maak eerst een groep aan."}
-      </p>
-      {!circlesLoading && !circles.length && <Link href="/circles/new">Groep aanmaken</Link>}
+      <p className="request-groups">Je verzoek wordt openbaar geplaatst en is direct zichtbaar op de overzichtspagina.</p>
 
       {error && <p role="alert">{error}</p>}
 

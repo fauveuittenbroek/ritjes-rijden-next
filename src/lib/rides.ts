@@ -25,6 +25,8 @@ export type Ride = {
   deadline: string | null;
   status: string;
   createdAt: string;
+  isCreator?: boolean;
+  isClaimer?: boolean;
   originPoint?: [number, number];
   destinationPoint?: [number, number];
 };
@@ -34,6 +36,10 @@ export const REQUEST_COLUMNS_WITHOUT_PHOTO =
 
 export const PUBLIC_REQUEST_COLUMNS = `${REQUEST_COLUMNS_WITHOUT_PHOTO},photo_path` as const;
 
+export const AUTH_REQUEST_COLUMNS = `${PUBLIC_REQUEST_COLUMNS},created_by,claimed_by` as const;
+
+export const AUTH_REQUEST_COLUMNS_BASIC = `${REQUEST_COLUMNS_WITHOUT_PHOTO},created_by,claimed_by` as const;
+
 type RequestRow = {
   id: string;
   type: RideType;
@@ -42,6 +48,8 @@ type RequestRow = {
   note: string | null;
   contact_name: string | null;
   photo_path?: string | null;
+  created_by?: string | null;
+  claimed_by?: string | null;
   vertrekplaats: string;
   bestemming: string;
   ophaaladres: string | null;

@@ -35,6 +35,12 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 .ride-category { color: #3b45b8; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.04em; text-transform: uppercase; }
 .ride-origin { font-weight: 800; font-size: 1.15rem; }
 .ride-destination { color: #6b7280; font-size: 1.05rem; }
+.ride-status { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 0.2rem 0.6rem; border-radius: 999px; margin-bottom: 0.5rem; }
+.ride-status-claimed { background: #e8eaff; color: #2f3dc4; }
+
+.admin-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+.admin-table th, .admin-table td { text-align: left; padding: 0.55rem 0.75rem; border-bottom: 1px solid #d8e0da; }
+.admin-table th { font-weight: 600; color: #52605a; }
 .ride-empty { color: #6b7280; }
 .ride-detail article { display: grid; gap: 0.5rem; margin-top: 1rem; }
 .ride-detail .ride-icon { margin: 0; }

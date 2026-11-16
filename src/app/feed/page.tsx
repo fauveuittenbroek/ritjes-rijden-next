@@ -39,8 +39,8 @@ export default function FeedPage() {
     {pending ? <p>Laden…</p> : <><section><h2>Mijn groepen</h2>
       {circles.length ? <ul>{circles.map(circle => <li key={circle.id}><strong>{circle.name}</strong> <span>Uitnodigingscode: {circle.invite_code}</span></li>)}</ul> : <p>Je bent nog geen lid van een groep.</p>}
     </section><section><h2>Verzoeken</h2>
-      {requests.length ? <ul>{requests.map(request => <li key={request.id}><Link href={`/requests/${request.id}`}>
-        {request.type === "goederen" ? request.item_description || "Goederen" : `Rit voor ${request.num_people ?? "?"} personen`} — {request.vertrekplaats} → {request.bestemming} ({request.status === "open" ? "Open" : "Ingevuld"})
+      {requests.length ? <ul>{requests.map(request => <li key={request.id}><Link href={`/rides/${request.id}`}>
+        {request.type === "goederen" ? request.item_description || "Goederen" : `Rit voor ${request.num_people ?? "?"} personen`} — {request.vertrekplaats} → {request.bestemming} ({request.status === "open" ? "Open" : "Geaccepteerd"})
       </Link></li>)}</ul> : <p>Er zijn nog geen verzoeken.</p>}
     </section></>}
   </main>;

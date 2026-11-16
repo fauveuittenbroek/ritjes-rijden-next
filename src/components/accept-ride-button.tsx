@@ -2,11 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 
 export function AcceptRideButton({ requestId }: { requestId: string }) {
   const router = useRouter();
-  const [client] = useState(() => createClient());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -14,8 +12,8 @@ export function AcceptRideButton({ requestId }: { requestId: string }) {
     setBusy(true);
     setError("");
     try {
-      const { error: rpcError } = await client.rpc("claim_request", { _id: requestId });
-      if (rpcError) throw rpcError;
+      const response = await fetch(`/api/requests/${requestId}/claim`, { method: "POST" });
+      if (!response.ok) throw new Error("claim failed");
       router.refresh();
     } catch {
       setError("Accepteren is niet gelukt. Het verzoek is misschien al geaccepteerd, of het is je eigen verzoek.");

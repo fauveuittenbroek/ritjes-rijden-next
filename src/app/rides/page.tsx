@@ -10,32 +10,35 @@ import {
   rideFromRequest,
 } from "@/lib/rides";
 import { RideThumb } from "@/components/ride-thumb";
+import { publicPhotoUrl } from "@/lib/rides-server";
 
 export const metadata: Metadata = { title: "Bekijk ritjes · Ritjes Rijden" };
 
 type SearchParams = Promise<{ q?: string | string[] }>;
+type RideRow = Parameters<typeof rideFromRequest>[0];
 
 async function loadPublicRides(): Promise<Ride[]> {
   try {
     const supabase = await createClient();
-    let rows: Parameters<typeof rideFromRequest>[0][] | null;
+    let rows: RideRow[] | null;
     const primary = await supabase
       .from("requests")
       .select(PUBLIC_REQUEST_COLUMNS)
-      .eq("status", "open")
+      .in("status", ["open", "claimed"])
       .order("created_at", { ascending: false })
-      .limit(50);
+      .limit(100);
     if (primary.error) {
       const fallback = await supabase
         .from("requests")
         .select(REQUEST_COLUMNS_WITHOUT_PHOTO)
-        .eq("status", "open")
+        .in("status", ["open", "claimed"])
         .order("created_at", { ascending: false })
-        .limit(50);
+        .limit(100);
       rows = fallback.data;
     } else {
       rows = primary.data;
     }
+
     const { data: { user } } = await supabase.auth.getUser();
     const rides = (rows ?? []).map((row) => rideFromRequest(row));
     const photoPaths = rides.flatMap((ride) => (ride.photoPath ? [ride.photoPath] : []));
@@ -48,9 +51,7 @@ async function loadPublicRides(): Promise<Ride[]> {
     }
     for (const ride of rides) {
       if (!ride.photoPath) continue;
-      ride.image =
-        signedUrls.get(ride.photoPath) ??
-        supabase.storage.from("request-photos").getPublicUrl(ride.photoPath).data.publicUrl;
+      ride.image = signedUrls.get(ride.photoPath) ?? publicPhotoUrl(ride.photoPath);
     }
     return rides;
   } catch {
@@ -58,11 +59,25 @@ async function loadPublicRides(): Promise<Ride[]> {
   }
 }
 
+function isStillVisible(ride: Ride): boolean {
+  if (ride.status === "open" || !ride.deadline) return true;
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 7);
+  return ride.deadline >= cutoff.toISOString().slice(0, 10);
+}
+
 export default async function RidesPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   const rawQuery = params.q;
   const query = (Array.isArray(rawQuery) ? rawQuery[0] : rawQuery)?.trim() ?? "";
-  const rides = [...DEMO_RIDES, ...(await loadPublicRides())].filter((ride) => matchesQuery(ride, query));
+  const rides = [...DEMO_RIDES, ...(await loadPublicRides())]
+    .filter(isStillVisible)
+    .filter((ride) => matchesQuery(ride, query))
+    .sort((a, b) => {
+      const statusOrder = Number(a.status !== "open") - Number(b.status !== "open");
+      if (statusOrder !== 0) return statusOrder;
+      return b.createdAt.localeCompare(a.createdAt);
+    });
 
   return (
     <main>
@@ -87,6 +102,7 @@ export default async function RidesPage({ searchParams }: { searchParams: Search
         <div className="rides-grid">
           {rides.map((ride) => (
             <Link key={ride.id} href={`/rides/${ride.id}`} className="ride-card">
+              {ride.status !== "open" && <span className="ride-status ride-status-claimed">Geaccepteerd</span>}
               <RideThumb icon={ride.icon} image={ride.image} title={ride.title} />
               <span className="ride-category">{ride.title}</span>
               <span className="ride-origin">{ride.origin}</span>
