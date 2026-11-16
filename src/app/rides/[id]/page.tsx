@@ -65,7 +65,7 @@ export default async function RidePage({ params }: { params: Params }) {
   const headerList = await headers();
   const host = headerList.get("host") ?? "localhost:3000";
   const protocol = headerList.get("x-forwarded-proto") ?? "http";
-  const shareText = `${ride.title}: ${ride.origin} → ${ride.destination}. Bekijk dit ritje op Ritjes Rijden: ${protocol}://${host}/rides/${ride.id}`;
+  const shareText = `Wil iemand ${ride.title} meenemen van ${ride.origin} naar ${ride.destination}? Bekijk op ritjes: ${protocol}://${host}/rides/${ride.id}`;
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
 
   return (
@@ -141,8 +141,6 @@ export default async function RidePage({ params }: { params: Params }) {
                 Inloggen
               </Link>
             </>
-          ) : ride.demo ? (
-            <p>Dit is een voorbeeldopdracht; alleen echte opdrachten kun je accepteren.</p>
           ) : ride.status !== "open" ? (
             ride.isClaimer || ride.isCreator ? (
               <>
