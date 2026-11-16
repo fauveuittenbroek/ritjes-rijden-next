@@ -7,13 +7,19 @@ export const metadata: Metadata = { title: "Claim-historie · Ritjes Rijden" };
 
 export default async function AdminPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const [authResult, adminResult, eventsResult] = await Promise.all([
+    supabase.auth.getUser(),
+    supabase.rpc("is_admin"),
+    supabase
+      .from("request_events")
+      .select("id,event_type,actor_email,request_title,created_at")
+      .order("created_at", { ascending: false })
+      .limit(200),
+  ]);
+  const user = authResult.data.user;
   if (!user) redirect("/login");
 
-  const { data: isAdmin } = await supabase.rpc("is_admin");
-  if (!isAdmin) {
+  if (!adminResult.data) {
     return (
       <main>
         <Link href="/">Terug naar home</Link>
@@ -23,11 +29,7 @@ export default async function AdminPage() {
     );
   }
 
-  const { data: events } = await supabase
-    .from("request_events")
-    .select("id,event_type,actor_email,request_title,created_at")
-    .order("created_at", { ascending: false })
-    .limit(200);
+  const events = eventsResult.data;
 
   return (
     <main>

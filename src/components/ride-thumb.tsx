@@ -29,6 +29,7 @@ export function RideThumb({
         height={large ? 480 : 320}
         sizes={large ? "160px" : "88px"}
         priority={priority}
+        unoptimized
         className={`ride-photo${className ? ` ${className}` : ""}`}
         onError={() => setFailed(true)}
       />

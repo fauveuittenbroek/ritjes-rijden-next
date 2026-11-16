@@ -18,7 +18,7 @@ export default async function FeedPage({ searchParams }: { searchParams: SearchP
   const params = await searchParams;
   const rawQuery = params.q;
   const query = (Array.isArray(rawQuery) ? rawQuery[0] : rawQuery)?.trim() ?? "";
-  const rides = (await loadPublicRides())
+  const rides = (await loadPublicRides({ supabase, userId: user.id }))
     .filter(isStillVisible)
     .filter((ride) => matchesQuery(ride, query))
     .sort((a, b) => {

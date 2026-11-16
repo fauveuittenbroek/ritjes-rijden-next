@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { matchesQuery } from "@/lib/rides";
 import { RideThumb } from "@/components/ride-thumb";
@@ -24,7 +25,10 @@ export default async function RidesPage({ searchParams }: { searchParams: Search
   return (
     <main>
       <header className="rides-head">
-        <h1>🚗 Vervoer-verzoeken</h1>
+        <h1>
+          <Image src="/Ritjes.com_logo.png" alt="" width={64} height={64} className="rides-logo" priority />
+          Ritjes.com
+        </h1>
         <Link className="rides-add" href="/requests/new">
           + Add
         </Link>

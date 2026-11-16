@@ -139,8 +139,8 @@ export function RequestForm() {
             onClick={() => setType("goederen")}
           >
             <span aria-hidden="true">📦</span>
-            <strong>Goederen</strong>
-            <span>Spullen meenemen</span>
+            <strong>Spullen</strong>
+            <span>meenemen</span>
           </button>
           <button
             type="button"
@@ -150,7 +150,7 @@ export function RequestForm() {
           >
             <span aria-hidden="true">🧑‍🤝‍🧑</span>
             <strong>Personen</strong>
-            <span>Meeliftten</span>
+            <span>rijden</span>
           </button>
         </div>
       </div>
@@ -158,10 +158,10 @@ export function RequestForm() {
       <div className="form-card">
         {type === "goederen" ? (
           <>
-            <label htmlFor="request-item">Wat voor spul?</label>
+            <label htmlFor="request-item">Wat wil je vervoeren?</label>
             <input id="request-item" value={item} onChange={(event) => setItem(event.target.value)} required />
 
-            <label htmlFor="request-photo">Foto van het spul</label>
+            <label htmlFor="request-photo">Foto</label>
             <input
               id="request-photo"
               type="file"
@@ -200,7 +200,7 @@ export function RequestForm() {
               required
             />
 
-            <label htmlFor="request-ride-date">Wanneer wil je meeliftten?</label>
+            <label htmlFor="request-ride-date">Wanneer?</label>
             <div className="datetime-row">
               <input
                 id="request-ride-date"

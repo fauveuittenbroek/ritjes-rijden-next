@@ -1,8 +1,13 @@
 export type Coordinates = [number, number];
 
+const cache = new Map<string, Coordinates>();
+
 export async function geocodePlace(place: string): Promise<Coordinates | null> {
   const query = place.trim();
   if (!query) return null;
+  const key = query.toLowerCase();
+  const cached = cache.get(key);
+  if (cached) return cached;
   try {
     const params = new URLSearchParams({
       q: query,
@@ -19,7 +24,9 @@ export async function geocodePlace(place: string): Promise<Coordinates | null> {
     const results = (await response.json()) as { lat?: string; lon?: string }[];
     const first = results[0];
     if (!first?.lat || !first.lon) return null;
-    return [Number(first.lat), Number(first.lon)];
+    const coordinates: Coordinates = [Number(first.lat), Number(first.lon)];
+    cache.set(key, coordinates);
+    return coordinates;
   } catch {
     return null;
   }

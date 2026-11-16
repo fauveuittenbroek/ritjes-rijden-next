@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import {
   AUTH_REQUEST_COLUMNS,
@@ -9,6 +10,7 @@ import {
 } from "@/lib/rides";
 
 type RideRow = Parameters<typeof rideFromRequest>[0];
+type DbClient = Awaited<ReturnType<typeof createClient>>;
 
 export function publicPhotoUrl(path: string): string {
   const encoded = path.split("/").map(encodeURIComponent).join("/");
@@ -22,9 +24,12 @@ export function isStillVisible(ride: Ride): boolean {
   return ride.deadline >= cutoff.toISOString().slice(0, 10);
 }
 
-export async function loadPublicRides(): Promise<Ride[]> {
+export async function loadPublicRides(options?: { supabase?: DbClient; userId?: string | null }): Promise<Ride[]> {
   try {
-    const supabase = await createClient();
+    const supabase = options?.supabase ?? (await createClient());
+    const userIdPromise = options?.userId === undefined
+      ? supabase.auth.getUser().then(({ data }) => data.user?.id ?? null)
+      : Promise.resolve(options.userId);
     let rows: RideRow[] | null;
     const primary = await supabase
       .from("requests")
@@ -44,11 +49,11 @@ export async function loadPublicRides(): Promise<Ride[]> {
       rows = primary.data;
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const userId = await userIdPromise;
     const rides = (rows ?? []).map((row) => rideFromRequest(row));
     const photoPaths = rides.flatMap((ride) => (ride.photoPath ? [ride.photoPath] : []));
     const signedUrls = new Map<string, string>();
-    if (user && photoPaths.length) {
+    if (userId && photoPaths.length) {
       const { data: signed } = await supabase.storage.from("request-photos").createSignedUrls(photoPaths, 60 * 60);
       for (const item of signed ?? []) {
         if (item.path && item.signedUrl) signedUrls.set(item.path, item.signedUrl);
@@ -64,7 +69,7 @@ export async function loadPublicRides(): Promise<Ride[]> {
   }
 }
 
-export async function loadRide(id: string): Promise<{ ride: Ride | null; isAuthed: boolean }> {
+export const loadRide = cache(async (id: string): Promise<{ ride: Ride | null; isAuthed: boolean }> => {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -101,4 +106,4 @@ export async function loadRide(id: string): Promise<{ ride: Ride | null; isAuthe
   } catch {
     return { ride: null, isAuthed: false };
   }
-}
+});

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { MapPoint, Ride } from "@/lib/rides";
 import { loadRide, publicPhotoUrl } from "@/lib/rides-server";
 import { geocodePlace } from "@/lib/geocode";
@@ -47,20 +48,40 @@ function formatReward(reward: number | null): string {
 }
 
 async function mapPointsForRide(ride: Ride): Promise<MapPoint[]> {
-  const originPoint = ride.originPoint ?? (await geocodePlace(ride.origin));
-  const destinationPoint = ride.destinationPoint ?? (await geocodePlace(ride.destination));
+  const [originPoint, destinationPoint] = await Promise.all([
+    ride.originPoint ?? geocodePlace(ride.origin),
+    ride.destinationPoint ?? geocodePlace(ride.destination),
+  ]);
   const points: MapPoint[] = [];
   if (originPoint) points.push({ role: "origin", label: `Vertrek: ${ride.origin}`, position: originPoint });
   if (destinationPoint) points.push({ role: "destination", label: `Bestemming: ${ride.destination}`, position: destinationPoint });
   return points;
 }
 
+async function RideMapSection({ ride }: { ride: Ride }) {
+  const mapPoints = await mapPointsForRide(ride);
+  const distance = mapPoints.length === 2 ? await distanceBetween(mapPoints[0].position, mapPoints[1].position) : null;
+  return (
+    <section className="ride-map">
+      <h2>Rit live volgen</h2>
+      {distance && (
+        <p className="ride-distance">
+          Afstand: ca. {Math.round(distance.km)} km{distance.mode === "straight" ? " (hemelsbreed)" : " over de weg"}
+        </p>
+      )}
+      {mapPoints.length ? (
+        <LiveMapLoader points={mapPoints} />
+      ) : (
+        <p>De locatie van dit ritje kon niet worden bepaald.</p>
+      )}
+    </section>
+  );
+}
+
 export default async function RidePage({ params }: { params: Params }) {
   const { id } = await params;
   const { ride, isAuthed } = await loadRide(id);
   if (!ride) notFound();
-  const mapPoints = await mapPointsForRide(ride);
-  const distance = mapPoints.length === 2 ? await distanceBetween(mapPoints[0].position, mapPoints[1].position) : null;
 
   const headerList = await headers();
   const host = headerList.get("host") ?? "localhost:3000";
@@ -119,19 +140,16 @@ export default async function RidePage({ params }: { params: Params }) {
           <dd>{formatDate(ride.createdAt) ?? "Onbekend"}</dd>
         </dl>
 
-        <section className="ride-map">
-          <h2>Rit live volgen</h2>
-          {distance && (
-            <p className="ride-distance">
-              Afstand: ca. {Math.round(distance.km)} km{distance.mode === "straight" ? " (hemelsbreed)" : " over de weg"}
-            </p>
-          )}
-          {mapPoints.length ? (
-            <LiveMapLoader points={mapPoints} />
-          ) : (
-            <p>De locatie van dit ritje kon niet worden bepaald.</p>
-          )}
-        </section>
+        <Suspense
+          fallback={
+            <section className="ride-map">
+              <h2>Rit live volgen</h2>
+              <p>Kaart laden…</p>
+            </section>
+          }
+        >
+          <RideMapSection ride={ride} />
+        </Suspense>
 
         <div className="ride-accept">
           {!isAuthed ? (
