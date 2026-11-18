@@ -9,6 +9,37 @@ type RequestType = "goederen" | "personen";
 const MAX_PHOTO_EDGE = 1600;
 const PHOTO_QUALITY = 0.8;
 
+function parseScheduledAt(dateValue: string, timeValue: string): { scheduledAt: string | null; error: string | null } {
+  const date = dateValue.trim();
+  const time = timeValue.trim();
+  if (!date && !time) return { scheduledAt: null, error: null };
+  if (!date || !time) return { scheduledAt: null, error: "Vul zowel datum als tijd in, of laat beide leeg." };
+
+  const isoDate = date.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  const dutchDate = date.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/);
+  const year = Number(isoDate?.[1] ?? dutchDate?.[3]);
+  const month = Number(isoDate?.[2] ?? dutchDate?.[2]);
+  const day = Number(isoDate?.[3] ?? dutchDate?.[1]);
+  if (!year || !month || !day) {
+    return { scheduledAt: null, error: "Vul een geldige datum in als dd-mm-jjjj." };
+  }
+
+  const timeParts = time.match(/^([01]?\d|2[0-3]):([0-5]\d)$/);
+  if (!timeParts) return { scheduledAt: null, error: "Vul een geldige tijd in als uu:mm." };
+
+  const hours = Number(timeParts[1]);
+  const minutes = Number(timeParts[2]);
+  const scheduled = new Date(year, month - 1, day, hours, minutes);
+  if (
+    scheduled.getFullYear() !== year || scheduled.getMonth() !== month - 1 ||
+    scheduled.getDate() !== day || scheduled.getHours() !== hours || scheduled.getMinutes() !== minutes
+  ) {
+    return { scheduledAt: null, error: "Vul een geldige datum en tijd in." };
+  }
+
+  return { scheduledAt: scheduled.toISOString(), error: null };
+}
+
 async function compressImage(file: File): Promise<File> {
   if (!file.type.startsWith("image/")) return file;
   try {
@@ -69,10 +100,14 @@ export function RequestForm() {
       return;
     }
 
-    const scheduledAt =
-      type === "personen" && rideDate
-        ? new Date(`${rideDate}T${rideTime || "00:00"}:00`).toISOString()
-        : null;
+    const schedule = type === "personen"
+      ? parseScheduledAt(rideDate, rideTime)
+      : { scheduledAt: null, error: null };
+    if (schedule.error) {
+      setError(schedule.error);
+      return;
+    }
+    const scheduledAt = schedule.scheduledAt;
 
     setBusy(true);
     try {
@@ -204,14 +239,20 @@ export function RequestForm() {
             <div className="datetime-row">
               <input
                 id="request-ride-date"
-                type="date"
-                aria-label="Datum"
+                type="text"
+                inputMode="numeric"
+                aria-label="Datum (dd-mm-jjjj)"
+                placeholder="dd-mm-jjjj"
+                autoComplete="off"
                 value={rideDate}
                 onChange={(event) => setRideDate(event.target.value)}
               />
               <input
-                type="time"
-                aria-label="Tijd"
+                type="text"
+                inputMode="numeric"
+                aria-label="Tijd (uu:mm)"
+                placeholder="uu:mm"
+                autoComplete="off"
                 value={rideTime}
                 onChange={(event) => setRideTime(event.target.value)}
               />

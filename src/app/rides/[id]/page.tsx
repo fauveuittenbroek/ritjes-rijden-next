@@ -43,6 +43,19 @@ function formatDate(value: string | null): string | null {
   return date.toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" });
 }
 
+function formatDateTime(value: string | null): string | null {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleString("nl-NL", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 function formatReward(reward: number | null): string {
   return reward == null ? "Nog niet opgegeven." : `€ ${reward.toFixed(2).replace(".", ",")}`;
 }
@@ -114,12 +127,16 @@ export default async function RidePage({ params }: { params: Params }) {
         </div>
 
         <dl>
-          <dt>Soort</dt>
-          <dd>{ride.type === "goederen" ? "Goederen" : "Personen"}</dd>
           {ride.numPeople != null && (
             <>
               <dt>Aantal personen</dt>
               <dd>{ride.numPeople}</dd>
+            </>
+          )}
+          {ride.type === "personen" && (
+            <>
+              <dt>Datum en tijd</dt>
+              <dd>{formatDateTime(ride.scheduledAt) ?? "Nog niet opgegeven."}</dd>
             </>
           )}
           <dt>Omschrijving</dt>
@@ -134,10 +151,12 @@ export default async function RidePage({ params }: { params: Params }) {
           <dd>{ride.pickupAddress || "Nog niet opgegeven."}</dd>
           <dt>Vergoeding</dt>
           <dd>{formatReward(ride.reward)}</dd>
-          <dt>Deadline</dt>
-          <dd>{formatDate(ride.deadline) ?? "Nog niet opgegeven."}</dd>
-          <dt>Geplaatst op</dt>
-          <dd>{formatDate(ride.createdAt) ?? "Onbekend"}</dd>
+          {ride.type === "goederen" && (
+            <>
+              <dt>Deadline</dt>
+              <dd>{formatDate(ride.deadline) ?? "Nog niet opgegeven."}</dd>
+            </>
+          )}
         </dl>
 
         <Suspense
