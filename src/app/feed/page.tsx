@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { matchesQuery } from "@/lib/rides";
+import { matchesLocation } from "@/lib/rides";
 import { RideThumb } from "@/components/ride-thumb";
 import { isStillVisible, loadPublicRides } from "@/lib/rides-server";
 
 export const metadata: Metadata = { title: "Overzicht · Ritjes Rijden" };
 
-type SearchParams = Promise<{ q?: string | string[] }>;
+type SearchParams = Promise<{ q?: string | string[]; confirmed?: string | string[] }>;
 
 export default async function FeedPage({ searchParams }: { searchParams: SearchParams }) {
   const supabase = await createClient();
@@ -18,9 +19,11 @@ export default async function FeedPage({ searchParams }: { searchParams: SearchP
   const params = await searchParams;
   const rawQuery = params.q;
   const query = (Array.isArray(rawQuery) ? rawQuery[0] : rawQuery)?.trim() ?? "";
+  const rawConfirmed = params.confirmed;
+  const confirmed = (Array.isArray(rawConfirmed) ? rawConfirmed[0] : rawConfirmed) === "1";
   const rides = (await loadPublicRides({ supabase, userId: user.id }))
     .filter(isStillVisible)
-    .filter((ride) => matchesQuery(ride, query))
+    .filter((ride) => matchesLocation(ride, query))
     .sort((a, b) => {
       const statusOrder = Number(a.status !== "open") - Number(b.status !== "open");
       if (statusOrder !== 0) return statusOrder;
@@ -30,15 +33,21 @@ export default async function FeedPage({ searchParams }: { searchParams: SearchP
   return (
     <main>
       <header className="rides-head">
-        <h1>Overzicht</h1>
+        <h1>
+          <Link href="/" className="rides-brand">
+            <Image src="/Ritjes.com_logo.png" alt="" width={64} height={64} className="rides-logo" priority />
+            Overzicht
+          </Link>
+        </h1>
         <nav className="ride-actions">
           <Link href="/requests/new" className="button-primary">Nieuw verzoek</Link>
           <Link href="/account" className="button-secondary">Account</Link>
         </nav>
       </header>
+      {confirmed && <p className="rides-note" role="status">Je e-mailadres is bevestigd. Je bent nu ingelogd op dit apparaat.</p>}
 
       <form className="rides-search" action="/feed" method="get" role="search">
-        <input type="search" name="q" defaultValue={query} placeholder="Zoek" aria-label="Zoek ritjes" />
+        <input type="search" name="q" defaultValue={query} placeholder="Zoek op vertrek- of aankomstlocatie" aria-label="Zoek op locatie" />
         <button type="submit">Zoek</button>
       </form>
 

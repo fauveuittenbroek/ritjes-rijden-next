@@ -8,6 +8,7 @@ import { loadRide, publicPhotoUrl } from "@/lib/rides-server";
 import { geocodePlace } from "@/lib/geocode";
 import { distanceBetween } from "@/lib/distance";
 import { AcceptRideButton } from "@/components/accept-ride-button";
+import { DeleteRideButton } from "@/components/delete-ride-button";
 import { ReleaseRideButton } from "@/components/release-ride-button";
 import { LiveMapLoader } from "@/components/live-map-loader";
 import { RideThumb } from "@/components/ride-thumb";
@@ -147,8 +148,19 @@ export default async function RidePage({ params }: { params: Params }) {
               <dd>{ride.contactName}</dd>
             </>
           )}
-          <dt>Ophaaladres</dt>
-          <dd>{ride.pickupAddress || "Nog niet opgegeven."}</dd>
+          {ride.isCreator || ride.isClaimer ? (
+            <>
+              <dt>Exacte ophaaladres</dt>
+              <dd>{ride.pickupAddress || "Nog niet opgegeven."}</dd>
+              <dt>Exacte afleveradres</dt>
+              <dd>{ride.deliveryAddress || "Nog niet opgegeven."}</dd>
+            </>
+          ) : (
+            <>
+              <dt>Exacte adressen</dt>
+              <dd>Alleen zichtbaar voor de plaatser en de geaccepteerde rijder.</dd>
+            </>
+          )}
           <dt>Vergoeding</dt>
           <dd>{formatReward(ride.reward)}</dd>
           {ride.type === "goederen" && (
@@ -188,7 +200,15 @@ export default async function RidePage({ params }: { params: Params }) {
               <p>Dit ritje is geaccepteerd.</p>
             )
           ) : ride.isCreator ? (
-            <p>Dit is je eigen verzoek; je kunt het niet zelf accepteren.</p>
+            <>
+              <p>Dit is je eigen verzoek; je kunt het niet zelf accepteren.</p>
+              <div className="ride-owner-actions">
+                <Link className="button-secondary" href={`/requests/${ride.id}/edit`}>
+                  Bewerk
+                </Link>
+                <DeleteRideButton requestId={ride.id} photoPath={ride.photoPath ?? null} />
+              </div>
+            </>
           ) : (
             <AcceptRideButton requestId={ride.id} />
           )}

@@ -91,6 +91,14 @@ export const loadRide = cache(async (id: string): Promise<{ ride: Ride | null; i
     const ride = rideFromRequest(data);
     ride.isCreator = Boolean(user && data.created_by === user.id);
     ride.isClaimer = Boolean(user && data.claimed_by === user.id);
+    if (user && (ride.isCreator || ride.isClaimer)) {
+      const { data: addresses } = await supabase.rpc("get_request_addresses", { _id: id });
+      const address = Array.isArray(addresses) ? addresses[0] : null;
+      if (address) {
+        ride.pickupAddress = address.ophaaladres ?? null;
+        ride.deliveryAddress = address.afleveradres ?? null;
+      }
+    }
 
     if (ride.photoPath) {
       if (user) {

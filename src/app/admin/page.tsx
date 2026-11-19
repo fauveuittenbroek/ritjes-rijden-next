@@ -49,7 +49,7 @@ export default async function AdminPage() {
             {events.map((event) => (
               <tr key={event.id}>
                 <td>{new Date(event.created_at as string).toLocaleString("nl-NL")}</td>
-                <td>{event.event_type === "claimed" ? "Geaccepteerd" : "Vrijgegeven"}</td>
+                <td>{event.event_type === "claimed" ? "Geaccepteerd" : event.event_type === "edited" ? "Gewijzigd" : "Vrijgegeven"}</td>
                 <td>{event.request_title ?? "—"}</td>
                 <td>{event.actor_email ?? "—"}</td>
               </tr>

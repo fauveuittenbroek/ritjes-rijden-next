@@ -17,8 +17,10 @@ export type Ride = {
   destination: string;
   description: string | null;
   contactName?: string | null;
+  itemDescription?: string | null;
   numPeople: number | null;
   pickupAddress: string | null;
+  deliveryAddress: string | null;
   reward: number | null;
   scheduledAt: string | null;
   deadline: string | null;
@@ -31,7 +33,7 @@ export type Ride = {
 };
 
 export const REQUEST_COLUMNS_WITHOUT_PHOTO =
-  "id,type,item_description,num_people,note,contact_name,vertrekplaats,bestemming,ophaaladres,reward,scheduled_at,deadline_date,status,created_at";
+  "id,type,item_description,num_people,note,contact_name,vertrekplaats,bestemming,reward,scheduled_at,deadline_date,status,created_at";
 
 export const PUBLIC_REQUEST_COLUMNS = `${REQUEST_COLUMNS_WITHOUT_PHOTO},photo_path` as const;
 
@@ -60,7 +62,6 @@ type RequestRow = {
   claimed_by?: string | null;
   vertrekplaats: string;
   bestemming: string;
-  ophaaladres: string | null;
   reward: number | string | null;
   scheduled_at: string | null;
   deadline_date: string | null;
@@ -78,9 +79,11 @@ export function rideFromRequest(row: RequestRow): Ride {
     destination: row.bestemming,
     description: row.note,
     contactName: row.contact_name,
+    itemDescription: row.item_description,
     photoPath: row.photo_path ?? null,
     numPeople: row.num_people,
-    pickupAddress: row.ophaaladres,
+    pickupAddress: null,
+    deliveryAddress: null,
     reward: row.reward == null ? null : Number(row.reward),
     scheduledAt: row.scheduled_at,
     deadline: row.deadline_date,
@@ -90,13 +93,13 @@ export function rideFromRequest(row: RequestRow): Ride {
 }
 
 export function requestTitle(row: Pick<RequestRow, "type" | "item_description" | "num_people">): string {
-  return row.type === "goederen"
-    ? row.item_description || "Goederen"
-    : `Rit voor ${row.num_people ?? "?"} personen`;
+  if (row.type === "goederen") return row.item_description || "Goederen";
+  const people = row.num_people ?? "?";
+  return `Rit voor ${people} ${people === 1 ? "persoon" : "personen"}`;
 }
 
-export function matchesQuery(ride: Ride, query: string): boolean {
-  if (!query) return true;
-  const haystack = [ride.title, ride.origin, ride.destination, ride.description ?? ""].join(" ").toLowerCase();
-  return haystack.includes(query.toLowerCase());
+export function matchesLocation(ride: Ride, query: string): boolean {
+  if (!query.trim()) return true;
+  const locationQuery = query.trim().toLocaleLowerCase("nl-NL");
+  return [ride.origin, ride.destination].some((location) => location.toLocaleLowerCase("nl-NL").includes(locationQuery));
 }

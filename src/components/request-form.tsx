@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useFeatureAuth } from "@/components/feature-auth";
+import type { RequestFormInitial } from "@/components/request-form-types";
 
 type RequestType = "goederen" | "personen";
 
@@ -40,6 +41,22 @@ function parseScheduledAt(dateValue: string, timeValue: string): { scheduledAt: 
   return { scheduledAt: scheduled.toISOString(), error: null };
 }
 
+function formatScheduledDate(value: string | null): { date: string; time: string } {
+  if (!value) return { date: "", time: "" };
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return { date: "", time: "" };
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return {
+    date: localDate.toISOString().slice(0, 10).split("-").reverse().join("-"),
+    time: localDate.toISOString().slice(11, 16),
+  };
+}
+
+function toDateInputValue(value: string | null): string {
+  if (!value) return "";
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : "";
+}
+
 async function compressImage(file: File): Promise<File> {
   if (!file.type.startsWith("image/")) return file;
   try {
@@ -62,25 +79,56 @@ async function compressImage(file: File): Promise<File> {
   }
 }
 
-export function RequestForm() {
+export function RequestForm({
+  initial,
+  requestId,
+  onSubmitRequest,
+}: {
+  initial?: RequestFormInitial;
+  requestId?: string;
+  onSubmitRequest?: (request: Record<string, unknown>) => Promise<{ error: string | null }>;
+}) {
   const { client, userId, loading: authLoading, error: authError } = useFeatureAuth();
   const router = useRouter();
 
-  const [type, setType] = useState<RequestType>("goederen");
-  const [item, setItem] = useState("");
-  const [numPeople, setNumPeople] = useState("");
+  const scheduledInitial = formatScheduledDate(initial?.scheduledAt ?? null);
+  const [type, setType] = useState<RequestType>(initial?.type ?? "goederen");
+  const [item, setItem] = useState(initial?.itemDescription ?? "");
+  const [numPeople, setNumPeople] = useState(initial?.numPeople != null ? String(initial.numPeople) : "");
   const [photo, setPhoto] = useState<File | null>(null);
-  const [note, setNote] = useState("");
-  const [deadline, setDeadline] = useState("");
-  const [rideDate, setRideDate] = useState("");
-  const [rideTime, setRideTime] = useState("");
-  const [origin, setOrigin] = useState("");
-  const [destination, setDestination] = useState("");
-  const [pickup, setPickup] = useState("");
-  const [by, setBy] = useState("");
-  const [price, setPrice] = useState("");
+  const [note, setNote] = useState(initial?.note ?? "");
+  const [deadline, setDeadline] = useState(toDateInputValue(initial?.deadline ?? null));
+  const [rideDate, setRideDate] = useState(scheduledInitial.date);
+  const [rideTime, setRideTime] = useState(scheduledInitial.time);
+  const [origin, setOrigin] = useState(initial?.vertrekplaats ?? "");
+  const [destination, setDestination] = useState(initial?.bestemming ?? "");
+  const [pickup, setPickup] = useState(initial?.ophaaladres ?? "");
+  const [delivery, setDelivery] = useState(initial?.afleveradres ?? "");
+  const [by, setBy] = useState(initial?.contactName ?? "");
+  const [price, setPrice] = useState(initial?.reward != null ? String(initial.reward) : "");
   const [busy, setBusy] = useState(false);
+  const [profileNameLoading, setProfileNameLoading] = useState(true);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!userId) return;
+    let active = true;
+    async function loadProfileName() {
+      try {
+        const { data } = await client.from("profiles").select("display_name").eq("id", userId).maybeSingle();
+        if (!active) return;
+        const displayName = typeof data?.display_name === "string" ? data.display_name.trim() : "";
+        if (displayName) setBy(displayName);
+        else if (initial?.contactName) setBy(initial.contactName);
+      } catch {
+        if (active && initial?.contactName) setBy(initial.contactName);
+      } finally {
+        if (active) setProfileNameLoading(false);
+      }
+    }
+    loadProfileName();
+    return () => { active = false; };
+  }, [client, userId, initial?.contactName]);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -99,6 +147,10 @@ export function RequestForm() {
       setError("Vul het aantal personen in.");
       return;
     }
+    if (!by.trim()) {
+      setError("Vul je voornaam of weergavenaam in.");
+      return;
+    }
 
     const schedule = type === "personen"
       ? parseScheduledAt(rideDate, rideTime)
@@ -111,7 +163,18 @@ export function RequestForm() {
 
     setBusy(true);
     try {
-      let photoPath: string | null = null;
+      const { error: profileError } = await client.from("profiles").upsert(
+        { id: userId, display_name: by.trim() },
+        { onConflict: "id" },
+      );
+      if (profileError) {
+        setError("Je weergavenaam opslaan is mislukt. Probeer het opnieuw.");
+        setBusy(false);
+        return;
+      }
+
+      const isEditing = Boolean(requestId && initial);
+      let photoPath: string | null = isEditing ? initial?.photoPath ?? null : null;
       if (photo) {
         const upload = await compressImage(photo);
         const safeName = upload.name.replace(/[^\w.-]/g, "_");
@@ -127,21 +190,37 @@ export function RequestForm() {
         photoPath = path;
       }
 
+      const requestPayload: Record<string, unknown> = {
+        type,
+        item_description: type === "goederen" ? item.trim() : null,
+        num_people: type === "personen" ? Number(numPeople) : null,
+        note: note.trim() || null,
+        vertrekplaats: origin.trim(),
+        bestemming: destination.trim(),
+        ophaaladres: pickup.trim() || null,
+        afleveradres: delivery.trim() || null,
+        reward: price ? Number(price.replace(",", ".")) : null,
+        contact_name: by.trim() || null,
+        scheduled_at: type === "personen" ? scheduledAt : null,
+        deadline_date: type === "goederen" ? deadline || null : null,
+        photo_path: photoPath,
+      };
+
+      if (isEditing) {
+        const { error: saveError } = onSubmitRequest
+          ? await onSubmitRequest(requestPayload)
+          : { error: "Het verzoek wijzigen is mislukt. Probeer het opnieuw." };
+        if (saveError) {
+          setError(saveError);
+          setBusy(false);
+          return;
+        }
+        router.push(`/rides/${requestId}`);
+        return;
+      }
+
       const { data, error: rpcError } = await client.rpc("create_request", {
-        p_request: {
-          type,
-          item_description: type === "goederen" ? item.trim() : null,
-          num_people: type === "personen" ? Number(numPeople) : null,
-          note: note.trim() || null,
-          vertrekplaats: origin.trim(),
-          bestemming: destination.trim(),
-          ophaaladres: pickup.trim() || null,
-          reward: price ? Number(price.replace(",", ".")) : null,
-          contact_name: by.trim() || null,
-          scheduled_at: type === "personen" ? scheduledAt : null,
-          deadline_date: type === "goederen" ? deadline || null : null,
-          photo_path: photoPath,
-        },
+        p_request: requestPayload,
         p_circle_ids: [],
       });
 
@@ -171,6 +250,7 @@ export function RequestForm() {
             type="button"
             className="type-card"
             aria-pressed={type === "goederen"}
+            disabled={Boolean(requestId)}
             onClick={() => setType("goederen")}
           >
             <span aria-hidden="true">📦</span>
@@ -181,6 +261,7 @@ export function RequestForm() {
             type="button"
             className="type-card"
             aria-pressed={type === "personen"}
+            disabled={Boolean(requestId)}
             onClick={() => setType("personen")}
           >
             <span aria-hidden="true">🧑‍🤝‍🧑</span>
@@ -204,7 +285,7 @@ export function RequestForm() {
               onChange={(event) => setPhoto(event.target.files?.[0] ?? null)}
             />
 
-            <label htmlFor="request-note">Opmerkingen</label>
+            <label htmlFor="request-note">Instructies</label>
             <textarea
               id="request-note"
               rows={3}
@@ -223,7 +304,7 @@ export function RequestForm() {
           </>
         ) : (
           <>
-            <label htmlFor="request-people">Met hoeveel personen?</label>
+            <label htmlFor="request-people">Aantal personen</label>
             <input
               id="request-people"
               type="number"
@@ -287,13 +368,23 @@ export function RequestForm() {
           required
         />
 
-        <label htmlFor="request-pickup">Exact ophaaladres / locatie</label>
+        <label htmlFor="request-pickup">Exacte ophaaladres</label>
         <input id="request-pickup" value={pickup} onChange={(event) => setPickup(event.target.value)} />
+
+        <label htmlFor="request-delivery">Exacte afleveradres</label>
+        <input id="request-delivery" value={delivery} onChange={(event) => setDelivery(event.target.value)} />
       </div>
 
       <div className="form-card">
-        <label htmlFor="request-by">Door</label>
-        <input id="request-by" placeholder="Naam" value={by} onChange={(event) => setBy(event.target.value)} />
+        <label htmlFor="request-by">Voornaam of weergavenaam</label>
+        <input
+          id="request-by"
+          placeholder="Naam die anderen zien"
+          maxLength={80}
+          required
+          value={by}
+          onChange={(event) => setBy(event.target.value)}
+        />
 
         <label htmlFor="request-price">Prijs (€)</label>
         <input
@@ -311,8 +402,8 @@ export function RequestForm() {
 
       {error && <p role="alert">{error}</p>}
 
-      <button type="submit" className="request-submit" disabled={busy}>
-        {busy ? "Bezig..." : "Plaats verzoek"}
+      <button type="submit" className="request-submit" disabled={busy || profileNameLoading}>
+        {busy ? "Bezig..." : profileNameLoading ? "Profiel laden..." : requestId ? "Wijzig verzoek" : "Plaats verzoek"}
       </button>
     </form>
   );

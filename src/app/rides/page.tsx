@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { matchesQuery } from "@/lib/rides";
+import { matchesLocation } from "@/lib/rides";
 import { RideThumb } from "@/components/ride-thumb";
 import { isStillVisible, loadPublicRides } from "@/lib/rides-server";
 
@@ -15,7 +15,7 @@ export default async function RidesPage({ searchParams }: { searchParams: Search
   const query = (Array.isArray(rawQuery) ? rawQuery[0] : rawQuery)?.trim() ?? "";
   const rides = (await loadPublicRides())
     .filter(isStillVisible)
-    .filter((ride) => matchesQuery(ride, query))
+    .filter((ride) => matchesLocation(ride, query))
     .sort((a, b) => {
       const statusOrder = Number(a.status !== "open") - Number(b.status !== "open");
       if (statusOrder !== 0) return statusOrder;
@@ -26,8 +26,10 @@ export default async function RidesPage({ searchParams }: { searchParams: Search
     <main>
       <header className="rides-head">
         <h1>
-          <Image src="/Ritjes.com_logo.png" alt="" width={64} height={64} className="rides-logo" priority />
-          Ritjes.com
+          <Link href="/" className="rides-brand">
+            <Image src="/Ritjes.com_logo.png" alt="" width={64} height={64} className="rides-logo" priority />
+            Ritjes.com
+          </Link>
         </h1>
         <Link className="rides-add" href="/requests/new">
           + Add
@@ -40,7 +42,7 @@ export default async function RidesPage({ searchParams }: { searchParams: Search
       </p>
 
       <form className="rides-search" action="/rides" method="get" role="search">
-        <input type="search" name="q" defaultValue={query} placeholder="Zoek" aria-label="Zoek ritjes" />
+        <input type="search" name="q" defaultValue={query} placeholder="Zoek op vertrek- of aankomstlocatie" aria-label="Zoek op locatie" />
         <button type="submit">Zoek</button>
       </form>
 

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { PasswordInput } from "@/components/password-input";
+import { isPasswordValid, PASSWORD_REQUIREMENT_TEXT } from "@/lib/password";
 
 export function AccountForm() {
   const [client] = useState(() => createClient());
@@ -12,12 +14,16 @@ export function AccountForm() {
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy) return;
+    if (!isPasswordValid(password)) {
+      setMessage(PASSWORD_REQUIREMENT_TEXT);
+      return;
+    }
     setBusy(true);
     setMessage("");
     try {
       const { error } = await client.auth.updateUser({ password });
       if (error) {
-        setMessage("Wachtwoord opslaan is niet gelukt. Kies een wachtwoord van minimaal 8 tekens.");
+        setMessage(`Wachtwoord opslaan is niet gelukt. ${PASSWORD_REQUIREMENT_TEXT}`);
         return;
       }
       setPassword("");
@@ -32,15 +38,15 @@ export function AccountForm() {
   return (
     <form onSubmit={submit}>
       <label htmlFor="account-password">Nieuw wachtwoord</label>
-      <input
+      <PasswordInput
         id="account-password"
-        type="password"
         autoComplete="new-password"
         minLength={8}
         required
         value={password}
         onChange={(event) => setPassword(event.target.value)}
       />
+      <p>{PASSWORD_REQUIREMENT_TEXT}</p>
       <button type="submit" disabled={busy}>
         {busy ? "Opslaan..." : "Wachtwoord opslaan"}
       </button>

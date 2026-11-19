@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AccountForm } from "@/components/account-form";
+import { ProfileNameForm } from "@/components/profile-name-form";
 import { LogoutButton } from "@/components/logout-button";
 
 export const metadata: Metadata = { title: "Account · Ritjes Rijden" };
@@ -13,12 +14,22 @@ export default async function AccountPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", user.id)
+    .maybeSingle();
+  const metadataName = user.user_metadata?.display_name;
+  const initialName = profile?.display_name?.trim() || (typeof metadataName === "string" ? metadataName : "");
 
   return (
     <main>
       <Link href="/feed">Terug naar overzicht</Link>
       <h1>Account</h1>
       <p>Ingelogd als {user.email}.</p>
+      <h2>Weergavenaam</h2>
+      <p>Deze naam wordt getoond bij je verzoeken.</p>
+      <ProfileNameForm userId={user.id} initialName={initialName} />
       <h2>Wachtwoord wijzigen (optioneel)</h2>
       <p>
         Je bent al ingelogd en kunt direct met je wachtwoord inloggen. Alleen als je je wachtwoord wilt

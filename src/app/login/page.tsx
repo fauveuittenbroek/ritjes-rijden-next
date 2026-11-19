@@ -4,14 +4,19 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { PasswordInput } from "@/components/password-input";
+import { isPasswordValid, PASSWORD_REQUIREMENT_TEXT } from "@/lib/password";
 import { authErrorMessage, networkErrorMessage } from "@/lib/auth-errors";
 
-type Step = "choice" | "existing" | "new";
+type Step = "choice" | "existing" | "new" | "confirmation";
+const LEGAL_VERSION = "1.0";
 
 export default function LoginPage() {
   const router = useRouter();
   const [step, setStep] = useState<Step>("choice");
   const [email, setEmail] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [acceptedLegal, setAcceptedLegal] = useState(false);
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -30,6 +35,8 @@ export default function LoginPage() {
     setStep(next);
     setMessage("");
     setPassword("");
+    setDisplayName("");
+    setAcceptedLegal(false);
     setBusy(false);
     setCanResend(false);
   }
@@ -59,12 +66,34 @@ export default function LoginPage() {
   async function handleSignUp(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy) return;
+    if (!isPasswordValid(password)) {
+      setMessage(PASSWORD_REQUIREMENT_TEXT);
+      return;
+    }
     setBusy(true);
     setMessage("");
     setCanResend(false);
+    if (!displayName.trim() || !acceptedLegal) {
+      setMessage("Vul je naam in en accepteer de gebruiksvoorwaarden en privacyverklaring.");
+      setBusy(false);
+      return;
+    }
     try {
       const supabase = createClient();
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            display_name: displayName.trim(),
+            terms_accepted: true,
+            privacy_acknowledged: true,
+            legal_version: LEGAL_VERSION,
+            terms_version: LEGAL_VERSION,
+            privacy_version: LEGAL_VERSION,
+          },
+        },
+      });
       if (error) {
         setMessage(authErrorMessage(error, "signup"));
         return;
@@ -73,8 +102,9 @@ export default function LoginPage() {
         router.replace("/feed");
         return;
       }
+      setStep("confirmation");
       setCanResend(true);
-      setMessage("Account aangemaakt. Controleer je e-mail (ook spam) om je account te bevestigen.");
+      setMessage(`Bevestigingsmail verstuurd naar ${email}.`);
     } catch {
       setMessage(networkErrorMessage);
     } finally {
@@ -134,9 +164,8 @@ export default function LoginPage() {
               onChange={(event) => setEmail(event.target.value)}
             />
             <label htmlFor="existing-password">Wachtwoord</label>
-            <input
+            <PasswordInput
               id="existing-password"
-              type="password"
               autoComplete="current-password"
               required
               value={password}
@@ -161,8 +190,18 @@ export default function LoginPage() {
       {step === "new" && (
         <section>
           <h2>Nieuwe gebruiker</h2>
-          <p>Maak een account aan met je e-mailadres en een wachtwoord.</p>
+          <p>Maak een account aan met je e-mailadres, weergavenaam en een wachtwoord.</p>
           <form onSubmit={handleSignUp}>
+            <label htmlFor="new-display-name">Voornaam of weergavenaam</label>
+            <input
+              id="new-display-name"
+              type="text"
+              autoComplete="name"
+              maxLength={80}
+              required
+              value={displayName}
+              onChange={(event) => setDisplayName(event.target.value)}
+            />
             <label htmlFor="new-email">E-mailadres</label>
             <input
               id="new-email"
@@ -172,16 +211,29 @@ export default function LoginPage() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
             />
+            <p>Je e-mailadres moet eerst worden bevestigd via de e-mail die we sturen.</p>
             <label htmlFor="new-password">Wachtwoord</label>
-            <input
+            <PasswordInput
               id="new-password"
-              type="password"
               autoComplete="new-password"
               minLength={8}
               required
               value={password}
               onChange={(event) => setPassword(event.target.value)}
             />
+            <p>{PASSWORD_REQUIREMENT_TEXT}</p>
+            <label className="legal-consent">
+              <input
+                type="checkbox"
+                required
+                checked={acceptedLegal}
+                onChange={(event) => setAcceptedLegal(event.target.checked)}
+              />
+              <span>
+                Ik ga akkoord met de <Link href="/voorwaarden" target="_blank" rel="noreferrer">gebruiksvoorwaarden</Link> en heb de{" "}
+                <Link href="/privacyverklaring" target="_blank" rel="noreferrer">privacyverklaring</Link> gelezen.
+              </span>
+            </label>
             <button type="submit" disabled={busy}>
               {busy ? "Bezig..." : "Account aanmaken"}
             </button>
@@ -195,6 +247,26 @@ export default function LoginPage() {
           <button type="button" className="text-button" onClick={() => go("choice")}>
             ← Terug
           </button>
+        </section>
+      )}
+      {step === "confirmation" && (
+        <section>
+          <h2>Bevestig je e-mailadres</h2>
+          <p role="status">{message}</p>
+          <p>Open de link in de e-mail om je e-mailadres te bevestigen.</p>
+          <div className="confirmation-actions">
+            {canResend && (
+              <button type="button" onClick={handleResend} disabled={busy || !email}>
+                {busy ? "Bezig..." : "Bevestigingsmail opnieuw sturen"}
+              </button>
+            )}
+            <button type="button" className="button-primary" onClick={() => go("existing")}>
+              Ik heb bevestigd — inloggen
+            </button>
+            <button type="button" className="text-button" onClick={() => go("new")}>
+              Ander e-mailadres gebruiken
+            </button>
+          </div>
         </section>
       )}
     </main>

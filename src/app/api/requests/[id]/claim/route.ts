@@ -50,9 +50,10 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
           .maybeSingle();
         const profileName = typeof profile?.display_name === "string" ? profile.display_name.trim() : "";
         const claimerName = profileName || user.email || "Onbekend";
+        const people = claimed.num_people ?? "?";
         const title =
           claimed.item_description ||
-          (claimed.type === "personen" ? `Rit voor ${claimed.num_people ?? "?"} personen` : "Goederen");
+          (claimed.type === "personen" ? `Rit voor ${people} ${people === 1 ? "persoon" : "personen"}` : "Goederen");
 
         await fetch("https://api.resend.com/emails", {
           method: "POST",
