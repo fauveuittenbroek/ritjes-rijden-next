@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { SiteHeader } from "@/components/site-header";
 
 export const metadata: Metadata = { title: "Privacyverklaring · Ritjes.com" };
 
 export default function PrivacyPage() {
   return (
-    <main className="legal-page">
-      <Link href="/">← Terug naar Ritjes.com</Link>
+    <>
+      <SiteHeader />
+      <main className="legal-page">
+        <Link href="/">← Terug naar Ritjes.com</Link>
       <h1>Privacyverklaring</h1>
       <p>Versie 1.0 · 19 november 2026</p>
 
@@ -18,6 +21,7 @@ export default function PrivacyPage() {
         <li>Je e-mailadres voor accountbevestiging, inloggen en noodzakelijke berichten.</li>
         <li>Je voornaam of weergavenaam voor je profiel en de verzoeken die je plaatst.</li>
         <li>Gegevens die je in een verzoek invult, zoals vertrek, bestemming, exact ophaaladres, exact afleveradres, instructies, datum/tijd, vergoeding, aantal personen en foto.</li>
+        <li>Tegenvoorstellen die je doet of ontvangt, zoals het voorgestelde bedrag, je korte bericht en de status daarvan.</li>
         <li>Gebeurtenissen rond accepteren, vrijgeven en wijzigen van verzoeken, voor de werking en controle van de dienst.</li>
         <li>Technische gegevens die nodig zijn om de website veilig en werkend te houden.</li>
       </ul>
@@ -44,6 +48,7 @@ export default function PrivacyPage() {
       <p>Bij belangrijke wijzigingen van deze verklaring informeren we gebruikers via de website of e-mail. Vragen over privacy kun je sturen naar <a href="mailto:welkom@ritjes.com">welkom@ritjes.com</a>.</p>
 
       <p><Link href="/voorwaarden">Lees ook de gebruiksvoorwaarden</Link>.</p>
-    </main>
+      </main>
+    </>
   );
 }

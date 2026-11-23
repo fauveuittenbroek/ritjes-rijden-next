@@ -4,7 +4,11 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { MapPoint, Ride } from "@/lib/rides";
+import { createClient } from "@/lib/supabase/server";
 import { loadRide, publicPhotoUrl } from "@/lib/rides-server";
+import { loadRideOffers } from "@/lib/request-offers";
+import { CounterOfferForm } from "@/components/counter-offer-form";
+import { OfferCard } from "@/components/offer-card";
 import { geocodePlace } from "@/lib/geocode";
 import { distanceBetween } from "@/lib/distance";
 import { AcceptRideButton } from "@/components/accept-ride-button";
@@ -12,6 +16,7 @@ import { DeleteRideButton } from "@/components/delete-ride-button";
 import { ReleaseRideButton } from "@/components/release-ride-button";
 import { LiveMapLoader } from "@/components/live-map-loader";
 import { RideThumb } from "@/components/ride-thumb";
+import { SiteHeader } from "@/components/site-header";
 
 type Params = Promise<{ id: string }>;
 
@@ -96,6 +101,11 @@ export default async function RidePage({ params }: { params: Params }) {
   const { id } = await params;
   const { ride, isAuthed } = await loadRide(id);
   if (!ride) notFound();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const offers = ride.status === "open" ? await loadRideOffers(ride.id) : [];
 
   const headerList = await headers();
   const host = headerList.get("host") ?? "localhost:3000";
@@ -104,8 +114,10 @@ export default async function RidePage({ params }: { params: Params }) {
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
 
   return (
-    <main className="ride-detail">
-      <Link href="/rides">← Terug naar alle ritjes</Link>
+    <>
+      <SiteHeader />
+      <main className="ride-detail">
+        <Link href="/rides">← Terug naar alle ritjes</Link>
       <article>
         <RideThumb icon={ride.icon} image={ride.image} title={ride.title} large priority />
         <h1>{ride.title}</h1>
@@ -210,10 +222,29 @@ export default async function RidePage({ params }: { params: Params }) {
               </div>
             </>
           ) : (
-            <AcceptRideButton requestId={ride.id} />
+            <>
+              <AcceptRideButton requestId={ride.id} />
+              <CounterOfferForm requestId={ride.id} requestedReward={ride.reward} />
+            </>
           )}
         </div>
+
+        {offers.length > 0 && (
+          <section className="ride-offers" aria-live="polite">
+            <h2>{ride.isCreator ? "Tegenvoorstellen" : "Jouw tegenvoorstel"}</h2>
+            {(ride.isCreator ? offers : offers.filter((offer) => offer.offeredBy === user?.id)).map((offer) => (
+              <OfferCard
+                key={offer.id}
+                offer={offer}
+                canRespond={Boolean(ride.isCreator && offer.status === "proposed")}
+                canWithdraw={Boolean(offer.offeredBy === user?.id && offer.status === "proposed")}
+                offererLabel={offer.offererName ?? "Rijder"}
+              />
+            ))}
+          </section>
+        )}
       </article>
-    </main>
+      </main>
+    </>
   );
 }

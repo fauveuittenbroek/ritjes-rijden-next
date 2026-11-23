@@ -35,7 +35,7 @@ export default async function FeedPage({ searchParams }: { searchParams: SearchP
       <header className="rides-head">
         <h1>
           <Link href="/" className="rides-brand">
-            <Image src="/Ritjes.com_logo.png" alt="" width={64} height={64} className="rides-logo" priority />
+            <Image src="/Ritjes_logo.jpeg" alt="Ritjes.com" width={240} height={160} className="rides-logo" priority />
             Overzicht
           </Link>
         </h1>

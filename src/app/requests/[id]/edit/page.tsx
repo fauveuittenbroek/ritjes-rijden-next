@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AUTH_REQUEST_COLUMNS, rideFromRequest } from "@/lib/rides";
 import { EditRequestForm } from "@/components/edit-request-form";
+import { SiteHeader } from "@/components/site-header";
 
 export const metadata: Metadata = { title: "Verzoek wijzigen · Ritjes Rijden" };
 
@@ -25,28 +26,31 @@ export default async function EditRequestPage({ params }: { params: Params }) {
   ride.deliveryAddress = addresses?.afleveradres ?? null;
 
   return (
-    <main>
-      <Link href={`/rides/${ride.id}`}>← Terug naar ritje</Link>
-      <h1>Verzoek wijzigen</h1>
-      <p>Alleen het type blijft hetzelfde.</p>
-      <EditRequestForm
-        requestId={ride.id}
-        initial={{
-          type: ride.type,
-          itemDescription: ride.itemDescription ?? null,
-          numPeople: ride.numPeople,
-          note: ride.description,
-          vertrekplaats: ride.origin,
-          bestemming: ride.destination,
-          ophaaladres: ride.pickupAddress,
-          afleveradres: ride.deliveryAddress,
-          reward: ride.reward,
-          scheduledAt: ride.scheduledAt,
-          deadline: ride.deadline,
-          contactName: ride.contactName ?? null,
-          photoPath: ride.photoPath ?? null,
-        }}
-      />
-    </main>
+    <>
+      <SiteHeader />
+      <main>
+        <Link href={`/rides/${ride.id}`}>← Terug naar ritje</Link>
+        <h1>Verzoek wijzigen</h1>
+        <p>Alleen het type blijft hetzelfde.</p>
+        <EditRequestForm
+          requestId={ride.id}
+          initial={{
+            type: ride.type,
+            itemDescription: ride.itemDescription ?? null,
+            numPeople: ride.numPeople,
+            note: ride.description,
+            vertrekplaats: ride.origin,
+            bestemming: ride.destination,
+            ophaaladres: ride.pickupAddress,
+            afleveradres: ride.deliveryAddress,
+            reward: ride.reward,
+            scheduledAt: ride.scheduledAt,
+            deadline: ride.deadline,
+            contactName: ride.contactName ?? null,
+            photoPath: ride.photoPath ?? null,
+          }}
+        />
+      </main>
+    </>
   );
 }

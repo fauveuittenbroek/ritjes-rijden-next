@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -132,8 +133,10 @@ export default function LoginPage() {
   }
 
   return (
-    <main>
-      <Link href="/">Terug naar home</Link>
+    <main className="login-page">
+      <Link href="/" className="login-brand">
+        <Image src="/Ritjes_logo.jpeg" alt="Ritjes.com" width={240} height={150} priority />
+      </Link>
       <h1>Inloggen</h1>
 
       {step === "choice" && (

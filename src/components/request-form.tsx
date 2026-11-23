@@ -244,7 +244,13 @@ export function RequestForm({
   return (
     <form className="request-form" onSubmit={submit}>
       <div className="form-card">
-        <label>Type</label>
+        <div className="form-card-head">
+          <span className="form-step">1</span>
+          <div>
+            <h2>Soort verzoek</h2>
+            <p>Wat moet er vervoerd worden?</p>
+          </div>
+        </div>
         <div className="type-grid">
           <button
             type="button"
@@ -272,6 +278,13 @@ export function RequestForm({
       </div>
 
       <div className="form-card">
+        <div className="form-card-head">
+          <span className="form-step">2</span>
+          <div>
+            <h2>{type === "goederen" ? "Je spullen" : "Je rit"}</h2>
+            <p>{type === "goederen" ? "Vertel wat er mee moet." : "Met hoeveel personen en wanneer?"}</p>
+          </div>
+        </div>
         {type === "goederen" ? (
           <>
             <label htmlFor="request-item">Wat wil je vervoeren?</label>
@@ -351,6 +364,13 @@ export function RequestForm({
       </div>
 
       <div className="form-card">
+        <div className="form-card-head">
+          <span className="form-step">3</span>
+          <div>
+            <h2>Route</h2>
+            <p>Waar wordt het opgehaald en waar moet het naartoe?</p>
+          </div>
+        </div>
         <label htmlFor="request-origin">Vertrekplaats</label>
         <input
           id="request-origin"
@@ -376,6 +396,13 @@ export function RequestForm({
       </div>
 
       <div className="form-card">
+        <div className="form-card-head">
+          <span className="form-step">4</span>
+          <div>
+            <h2>Contact en vergoeding</h2>
+            <p>Zo weten anderen met wie ze afspreken.</p>
+          </div>
+        </div>
         <label htmlFor="request-by">Voornaam of weergavenaam</label>
         <input
           id="request-by"

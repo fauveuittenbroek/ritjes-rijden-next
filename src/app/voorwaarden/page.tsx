@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { SiteHeader } from "@/components/site-header";
 
 export const metadata: Metadata = { title: "Gebruiksvoorwaarden · Ritjes.com" };
 
 export default function TermsPage() {
   return (
-    <main className="legal-page">
-      <Link href="/">← Terug naar Ritjes.com</Link>
+    <>
+      <SiteHeader />
+      <main className="legal-page">
+        <Link href="/">← Terug naar Ritjes.com</Link>
       <h1>Gebruiksvoorwaarden</h1>
       <p>Versie 1.0 · 19 november 2026</p>
 
@@ -20,6 +23,7 @@ export default function TermsPage() {
       <h2>3. Verzoeken en gedrag</h2>
       <p>Je bent verantwoordelijk voor de juistheid en volledigheid van je verzoek en voor de afspraken die je met andere gebruikers maakt. Plaats geen illegale of gevaarlijke vervoerverzoeken en deel geen gegevens die je niet openbaar wilt maken. Verzoeken en de ingevulde gegevens kunnen zichtbaar zijn voor bezoekers van de website.</p>
       <p>Je mag het platform niet misbruiken, anderen lastigvallen of informatie plaatsen waarvoor je geen rechten hebt. Voor een foto die je uploadt, moet je toestemming hebben om die te delen. Je geeft Ritjes.com toestemming de foto te tonen voor het uitvoeren van de dienst.</p>
+      <p>Een maker mag een tegenvoorstel accepteren. Daarbij wordt de vergoeding aangepast en wordt de rit gereserveerd voor de betreffende gebruiker. Andere openstaande tegenvoorstellen voor die rit worden dan geweigerd.</p>
 
       <h2>4. Afspraken tussen gebruikers</h2>
       <p>De gebruiker die een verzoek plaatst en de gebruiker die het accepteert maken zelf afspraken over uitvoering, tijd, vergoeding en eventuele betaling. Ritjes.com houdt geen betalingen aan en is geen partij bij die afspraken. Controleer zelf of een afspraak veilig en wettelijk is.</p>
@@ -34,6 +38,7 @@ export default function TermsPage() {
       <p>Vragen of klachten kun je sturen naar <a href="mailto:welkom@ritjes.com">welkom@ritjes.com</a>. Op deze voorwaarden is Nederlands recht van toepassing, met behoud van dwingende wettelijke rechten.</p>
 
       <p><Link href="/privacyverklaring">Lees ook de privacyverklaring</Link>.</p>
-    </main>
+      </main>
+    </>
   );
 }
