@@ -18,7 +18,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
   const host = hostHeader.split(":")[0].toLowerCase();
 
   if (host.endsWith(".netlify.app")) {
-    const canonicalLogin = new URL("/login", "https://www.ritjes.com");
+    const canonicalLogin = new URL("/login", "https://ritjes.com");
     canonicalLogin.searchParams.set("mode", mode);
     if (error === "auth") canonicalLogin.searchParams.set("error", error);
     redirect(canonicalLogin.toString());

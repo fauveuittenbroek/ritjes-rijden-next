@@ -67,7 +67,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         [
           "<h2>Gefeliciteerd</h2>",
           `<p>Je tegenvoorstel van <strong>${escapeHtml(formatEuro(Number(offer.amount)))}</strong> voor <strong>${escapeHtml(title)}</strong> is geaccepteerd.</p>`,
-          `<p><a href="${process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.ritjes.com"}/rides/${offer.request_id}">Bekijk het ritje</a></p>`,
+          `<p><a href="${process.env.NEXT_PUBLIC_SITE_URL ?? "https://ritjes.com"}/rides/${offer.request_id}">Bekijk het ritje</a></p>`,
         ].join(""),
       );
     }

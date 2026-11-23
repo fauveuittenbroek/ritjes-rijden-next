@@ -1,12 +1,16 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+const CANONICAL_ORIGIN = "https://ritjes.com";
+
 export function middleware(request: NextRequest) {
   const hostname = request.nextUrl.hostname.toLowerCase();
   const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
-  if (!isLocalhost && hostname !== "www.ritjes.com") {
+  const canonical = new URL(CANONICAL_ORIGIN);
+
+  if (!isLocalhost && hostname !== canonical.hostname.toLowerCase()) {
     const canonicalUrl = request.nextUrl.clone();
-    canonicalUrl.protocol = "https:";
-    canonicalUrl.host = "www.ritjes.com";
+    canonicalUrl.protocol = canonical.protocol;
+    canonicalUrl.host = canonical.host;
     return NextResponse.redirect(canonicalUrl, 308);
   }
 
