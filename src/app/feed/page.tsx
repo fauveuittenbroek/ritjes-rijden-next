@@ -40,6 +40,7 @@ export default async function FeedPage({ searchParams }: { searchParams: SearchP
           </Link>
         </h1>
         <nav className="ride-actions">
+          <Link href="/rides" className="plain-nav-link">Bekijk ritjes</Link>
           <Link href="/requests/new" className="button-primary">Nieuw verzoek</Link>
           <Link href="/account" className="button-secondary">Account</Link>
         </nav>

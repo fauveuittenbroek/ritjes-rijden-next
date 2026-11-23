@@ -16,8 +16,14 @@ const LEGAL_VERSION = "1.0";
 
 const HomeAuthContext = createContext<{ open: (mode: AuthMode) => void } | null>(null);
 
-export function HomeAuthProvider({ children }: { children: ReactNode }) {
-  const [mode, setMode] = useState<AuthMode | null>(null);
+export function HomeAuthProvider({
+  children,
+  initialMode = null,
+}: {
+  children: ReactNode;
+  initialMode?: AuthMode | null;
+}) {
+  const [mode, setMode] = useState<AuthMode | null>(initialMode);
   return (
     <HomeAuthContext.Provider value={{ open: setMode }}>
       {children}

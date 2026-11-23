@@ -12,7 +12,11 @@ import { OfferCard } from "@/components/offer-card";
 import { geocodePlace } from "@/lib/geocode";
 import { distanceBetween } from "@/lib/distance";
 import { AcceptRideButton } from "@/components/accept-ride-button";
+import { CompleteRideButton } from "@/components/complete-ride-button";
 import { DeleteRideButton } from "@/components/delete-ride-button";
+import { ReviewForm } from "@/components/review-form";
+import { Stars } from "@/components/stars";
+import { loadRideCompletion, loadRideReviews } from "@/lib/reviews";
 import { ReleaseRideButton } from "@/components/release-ride-button";
 import { LiveMapLoader } from "@/components/live-map-loader";
 import { RideThumb } from "@/components/ride-thumb";
@@ -106,144 +110,214 @@ export default async function RidePage({ params }: { params: Params }) {
     data: { user },
   } = await supabase.auth.getUser();
   const offers = ride.status === "open" ? await loadRideOffers(ride.id) : [];
+  const completion = ride.status === "claimed" ? await loadRideCompletion(ride.id) : null;
+  const reviews = ride.status === "claimed" ? await loadRideReviews(ride.id) : [];
+  const myReview = user ? reviews.find((review) => review.reviewerId === user.id) : undefined;
 
   const headerList = await headers();
   const host = headerList.get("host") ?? "localhost:3000";
   const protocol = headerList.get("x-forwarded-proto") ?? "http";
   const shareText = `Wil iemand ${ride.title} meenemen van ${ride.origin} naar ${ride.destination}? Bekijk op ritjes: ${protocol}://${host}/rides/${ride.id}`;
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+  const statusText = ride.status === "open" ? "Open" : completion ? "Afgerond" : "Geaccepteerd";
+  const statusClass = ride.status === "open" ? "is-open" : completion ? "is-completed" : "is-claimed";
+  const typeLabel = ride.type === "goederen" ? "Spullen" : "Personen";
 
   return (
     <>
       <SiteHeader />
       <main className="ride-detail">
-        <Link href="/rides">← Terug naar alle ritjes</Link>
-      <article>
-        <RideThumb icon={ride.icon} image={ride.image} title={ride.title} large priority />
-        <h1>{ride.title}</h1>
-        <p className="ride-route">
-          {ride.origin} → {ride.destination}
-        </p>
-        <p>
-          <strong>Status:</strong> {ride.status === "open" ? "Open" : "Geaccepteerd"}
-        </p>
-
-        <div className="ride-actions">
-          <a className="whatsapp-share" href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-            Deel via WhatsApp
-          </a>
-          {!isAuthed && (
-            <Link className="button-primary" href="/login">
-              Inloggen
-            </Link>
-          )}
-        </div>
-
-        <dl>
-          {ride.numPeople != null && (
-            <>
-              <dt>Aantal personen</dt>
-              <dd>{ride.numPeople}</dd>
-            </>
-          )}
-          {ride.type === "personen" && (
-            <>
-              <dt>Datum en tijd</dt>
-              <dd>{formatDateTime(ride.scheduledAt) ?? "Nog niet opgegeven."}</dd>
-            </>
-          )}
-          <dt>Omschrijving</dt>
-          <dd>{ride.description || "Nog niet opgegeven."}</dd>
-          {ride.contactName && (
-            <>
-              <dt>Door</dt>
-              <dd>{ride.contactName}</dd>
-            </>
-          )}
-          {ride.isCreator || ride.isClaimer ? (
-            <>
-              <dt>Exacte ophaaladres</dt>
-              <dd>{ride.pickupAddress || "Nog niet opgegeven."}</dd>
-              <dt>Exacte afleveradres</dt>
-              <dd>{ride.deliveryAddress || "Nog niet opgegeven."}</dd>
-            </>
-          ) : (
-            <>
-              <dt>Exacte adressen</dt>
-              <dd>Alleen zichtbaar voor de plaatser en de geaccepteerde rijder.</dd>
-            </>
-          )}
-          <dt>Vergoeding</dt>
-          <dd>{formatReward(ride.reward)}</dd>
-          {ride.type === "goederen" && (
-            <>
-              <dt>Deadline</dt>
-              <dd>{formatDate(ride.deadline) ?? "Nog niet opgegeven."}</dd>
-            </>
-          )}
-        </dl>
-
-        <Suspense
-          fallback={
-            <section className="ride-map">
-              <h2>Rit live volgen</h2>
-              <p>Kaart laden…</p>
-            </section>
-          }
-        >
-          <RideMapSection ride={ride} />
-        </Suspense>
-
-        <div className="ride-accept">
-          {!isAuthed ? (
-            <>
-              <p>Log in om dit ritje te accepteren.</p>
-              <Link className="rides-add" href="/login">
-                Inloggen
-              </Link>
-            </>
-          ) : ride.status !== "open" ? (
-            ride.isClaimer || ride.isCreator ? (
-              <>
-                <p>{ride.isClaimer ? "Je hebt dit ritje geaccepteerd." : "Dit ritje is geaccepteerd."}</p>
-                <ReleaseRideButton requestId={ride.id} />
-              </>
-            ) : (
-              <p>Dit ritje is geaccepteerd.</p>
-            )
-          ) : ride.isCreator ? (
-            <>
-              <p>Dit is je eigen verzoek; je kunt het niet zelf accepteren.</p>
-              <div className="ride-owner-actions">
-                <Link className="button-secondary" href={`/requests/${ride.id}/edit`}>
-                  Bewerk
-                </Link>
-                <DeleteRideButton requestId={ride.id} photoPath={ride.photoPath ?? null} />
+        <Link href="/rides" className="detail-back">← Alle ritjes</Link>
+        <article>
+          <header className="detail-hero">
+            <RideThumb icon={ride.icon} image={ride.image} title={ride.title} large priority />
+            <div className="detail-hero-body">
+              <div className="detail-badges">
+                <span className={`detail-status ${statusClass}`}>{statusText}</span>
+                <span className="detail-type">{typeLabel}</span>
               </div>
-            </>
-          ) : (
-            <>
-              <AcceptRideButton requestId={ride.id} />
-              <CounterOfferForm requestId={ride.id} requestedReward={ride.reward} />
-            </>
-          )}
-        </div>
+              <h1>{ride.title}</h1>
+              <p className="detail-route">
+                <span>{ride.origin}</span>
+                <span aria-hidden="true">→</span>
+                <span>{ride.destination}</span>
+              </p>
+              <div className="detail-chips">
+                <span className="detail-chip">
+                  <strong>{formatReward(ride.reward)}</strong>
+                  <small>vergoeding</small>
+                </span>
+                {ride.numPeople != null && (
+                  <span className="detail-chip">
+                    <strong>{ride.numPeople}</strong>
+                    <small>personen</small>
+                  </span>
+                )}
+                {ride.type === "personen" && (
+                  <span className="detail-chip">
+                    <strong>{formatDateTime(ride.scheduledAt) ?? "Nog niet opgegeven"}</strong>
+                    <small>datum en tijd</small>
+                  </span>
+                )}
+                {ride.type === "goederen" && (
+                  <span className="detail-chip">
+                    <strong>{formatDate(ride.deadline) ?? "Geen deadline"}</strong>
+                    <small>deadline</small>
+                  </span>
+                )}
+              </div>
+              <div className="ride-actions">
+                <a className="whatsapp-share" href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+                  Deel via WhatsApp
+                </a>
+              </div>
+            </div>
+          </header>
 
-        {offers.length > 0 && (
-          <section className="ride-offers" aria-live="polite">
-            <h2>{ride.isCreator ? "Tegenvoorstellen" : "Jouw tegenvoorstel"}</h2>
-            {(ride.isCreator ? offers : offers.filter((offer) => offer.offeredBy === user?.id)).map((offer) => (
-              <OfferCard
-                key={offer.id}
-                offer={offer}
-                canRespond={Boolean(ride.isCreator && offer.status === "proposed")}
-                canWithdraw={Boolean(offer.offeredBy === user?.id && offer.status === "proposed")}
-                offererLabel={offer.offererName ?? "Rijder"}
-              />
-            ))}
-          </section>
-        )}
-      </article>
+          <div className="detail-layout">
+            <div className="detail-main">
+              <section className="detail-card">
+                <h2>Over deze aanvraag</h2>
+                <p className="detail-description">{ride.description || "Er is geen extra omschrijving toegevoegd."}</p>
+                <dl className="detail-facts">
+                  <div><dt>Vertrek</dt><dd>{ride.origin}</dd></div>
+                  <div><dt>Bestemming</dt><dd>{ride.destination}</dd></div>
+                  {ride.contactName && <div><dt>Geplaatst door</dt><dd>{ride.contactName}</dd></div>}
+                  {ride.type === "personen" && (
+                    <div><dt>Datum en tijd</dt><dd>{formatDateTime(ride.scheduledAt) ?? "Nog niet opgegeven."}</dd></div>
+                  )}
+                  {ride.type === "goederen" && (
+                    <div><dt>Deadline</dt><dd>{formatDate(ride.deadline) ?? "Nog niet opgegeven."}</dd></div>
+                  )}
+                </dl>
+              </section>
+
+              <section className="detail-card">
+                <h2>Exacte adressen</h2>
+                {ride.isCreator || ride.isClaimer ? (
+                  <dl className="detail-facts">
+                    <div><dt>Ophalen</dt><dd>{ride.pickupAddress || "Nog niet opgegeven."}</dd></div>
+                    <div><dt>Afleveren</dt><dd>{ride.deliveryAddress || "Nog niet opgegeven."}</dd></div>
+                  </dl>
+                ) : (
+                  <p className="detail-note">Deze adressen zijn alleen zichtbaar voor de plaatser en de geaccepteerde rijder.</p>
+                )}
+              </section>
+
+              <Suspense
+                fallback={
+                  <section className="detail-card ride-map">
+                    <h2>Rit live volgen</h2>
+                    <p>Kaart laden…</p>
+                  </section>
+                }
+              >
+                <RideMapSection ride={ride} />
+              </Suspense>
+            </div>
+
+            <aside className="detail-side">
+              <section className="detail-card detail-action-card">
+                <span className="detail-price-label">Vergoeding</span>
+                <strong className="detail-price">{formatReward(ride.reward)}</strong>
+                <div className="ride-accept">
+                  {!isAuthed ? (
+                    <>
+                      <p>{ride.status === "open" ? "Log in om dit ritje te accepteren." : "Log in om de gegevens van dit ritje te bekijken."}</p>
+                      <Link className="button-primary" href="/login">
+                        Inloggen
+                      </Link>
+                    </>
+                  ) : ride.status !== "open" ? (
+                    ride.isClaimer || ride.isCreator ? (
+                      <>
+                        <p>{ride.isClaimer ? "Je hebt dit ritje geaccepteerd." : "Dit ritje is geaccepteerd."}</p>
+                        <ReleaseRideButton requestId={ride.id} />
+                      </>
+                    ) : (
+                      <p>Dit ritje is geaccepteerd.</p>
+                    )
+                  ) : ride.isCreator ? (
+                    <>
+                      <p>Dit is je eigen verzoek; je kunt het niet zelf accepteren.</p>
+                      <div className="ride-owner-actions">
+                        <Link className="button-secondary" href={`/requests/${ride.id}/edit`}>
+                          Bewerk
+                        </Link>
+                        <DeleteRideButton requestId={ride.id} photoPath={ride.photoPath ?? null} />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <AcceptRideButton requestId={ride.id} />
+                      <CounterOfferForm requestId={ride.id} requestedReward={ride.reward} />
+                    </>
+                  )}
+                </div>
+              </section>
+
+              {offers.length > 0 && (
+                <section className="detail-card ride-offers" aria-live="polite">
+                  <h2>{ride.isCreator ? "Tegenvoorstellen" : "Jouw tegenvoorstel"}</h2>
+                  {(ride.isCreator ? offers : offers.filter((offer) => offer.offeredBy === user?.id)).map((offer) => (
+                    <OfferCard
+                      key={offer.id}
+                      offer={offer}
+                      canRespond={Boolean(ride.isCreator && offer.status === "proposed")}
+                      canWithdraw={Boolean(offer.offeredBy === user?.id && offer.status === "proposed")}
+                      offererLabel={offer.offererName ?? "Rijder"}
+                    />
+                  ))}
+                </section>
+              )}
+            </aside>
+          </div>
+
+          {ride.status === "claimed" && (
+            <section className="detail-card ride-reviews">
+              <h2>Beoordelingen</h2>
+              {completion ? (
+                <p className="ride-completed">
+                  Afgerond op {formatDate(completion.completedAt) ?? "onbekende datum"}.
+                </p>
+              ) : (
+                <p className="detail-note">
+                  Deze rit is nog niet afgerond. Na afronding kunnen de plaatser en de rijder elkaar beoordelen.
+                </p>
+              )}
+
+              {isAuthed && (ride.isCreator || ride.isClaimer) && !completion && (
+                <CompleteRideButton requestId={ride.id} />
+              )}
+
+              {isAuthed && (ride.isCreator || ride.isClaimer) && completion && (
+                <ReviewForm
+                  requestId={ride.id}
+                  initialRating={myReview?.rating ?? 0}
+                  initialComment={myReview?.comment ?? ""}
+                  existing={Boolean(myReview)}
+                />
+              )}
+
+              {reviews.length ? (
+                <ul className="review-list">
+                  {reviews.map((review) => (
+                    <li key={review.id} className="review-card">
+                      <header>
+                        <strong>{review.reviewerName}</strong>
+                        <Stars value={review.rating} size={16} />
+                        <span>{formatDate(review.createdAt)}</span>
+                      </header>
+                      {review.comment && <p>{review.comment}</p>}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="detail-note">Er zijn nog geen beoordelingen geplaatst.</p>
+              )}
+            </section>
+          )}
+        </article>
       </main>
     </>
   );

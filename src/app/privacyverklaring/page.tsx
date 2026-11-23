@@ -19,7 +19,7 @@ export default function PrivacyPage() {
       <h2>2. Welke gegevens verwerken we?</h2>
       <ul>
         <li>Je e-mailadres voor accountbevestiging, inloggen en noodzakelijke berichten.</li>
-        <li>Je voornaam of weergavenaam voor je profiel en de verzoeken die je plaatst.</li>
+        <li>Je voornaam of weergavenaam voor je profiel en de verzoeken die je plaatst, en een profielfoto als je die uploadt.</li>
         <li>Gegevens die je in een verzoek invult, zoals vertrek, bestemming, exact ophaaladres, exact afleveradres, instructies, datum/tijd, vergoeding, aantal personen en foto.</li>
         <li>Tegenvoorstellen die je doet of ontvangt, zoals het voorgestelde bedrag, je korte bericht en de status daarvan.</li>
         <li>Gebeurtenissen rond accepteren, vrijgeven en wijzigen van verzoeken, voor de werking en controle van de dienst.</li>

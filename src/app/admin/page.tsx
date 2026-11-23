@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SiteHeader } from "@/components/site-header";
 
-export const metadata: Metadata = { title: "Claim-historie · Ritjes Rijden" };
+export const metadata: Metadata = { title: "Beheerhistorie · Ritjes.com" };
 
 export default async function AdminPage() {
   const supabase = await createClient();
@@ -40,7 +40,7 @@ export default async function AdminPage() {
       <SiteHeader />
       <main>
         <Link href="/feed">Terug naar overzicht</Link>
-        <h1>Claim-historie</h1>
+        <h1>Beheerhistorie</h1>
         {events?.length ? (
           <table className="admin-table">
             <thead>
@@ -59,6 +59,8 @@ export default async function AdminPage() {
                     claimed: "Geaccepteerd",
                     released: "Vrijgegeven",
                     edited: "Gewijzigd",
+                    completed: "Afgerond",
+                    reviewed: "Beoordeeld",
                     offer_proposed: "Tegenvoorstel gedaan",
                     offer_accepted: "Tegenvoorstel geaccepteerd",
                     offer_declined: "Tegenvoorstel geweigerd",

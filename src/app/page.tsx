@@ -239,6 +239,11 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
           <footer className="home-footer">
             <span>© 2026 Ritjes.com</span>
             <span>
+              {signedIn && (
+                <>
+                  <Link href="/account">Mijn account</Link> · <Link href="/feed">Naar overzicht</Link> ·{" "}
+                </>
+              )}
               <Link href="/voorwaarden">Gebruiksvoorwaarden</Link> · <Link href="/privacyverklaring">Privacyverklaring</Link> ·{" "}
               <a href="mailto:welkom@ritjes.com">Contact</a>
             </span>

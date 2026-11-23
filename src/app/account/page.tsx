@@ -4,18 +4,13 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AccountForm } from "@/components/account-form";
 import { ProfileNameForm } from "@/components/profile-name-form";
+import { ProfilePhotoForm } from "@/components/profile-photo-form";
 import { LogoutButton } from "@/components/logout-button";
 import { SiteHeader } from "@/components/site-header";
+import { Stars } from "@/components/stars";
+import { loadReceivedReviews } from "@/lib/reviews";
 
 export const metadata: Metadata = { title: "Mijn account · Ritjes.com" };
-
-function initialsFrom(name: string, email: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length) {
-    return parts.slice(0, 2).map((part) => part[0]?.toUpperCase() ?? "").join("") || "?";
-  }
-  return email.slice(0, 1).toUpperCase() || "?";
-}
 
 export default async function AccountPage() {
   const supabase = await createClient();
@@ -26,7 +21,7 @@ export default async function AccountPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name, phone, account_type")
+    .select("display_name, phone, account_type, avatar_path")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -35,6 +30,7 @@ export default async function AccountPage() {
   const phone = profile?.phone?.trim() || (typeof user.user_metadata?.phone === "string" ? user.user_metadata.phone : "");
   const accountType = profile?.account_type === "zakelijk" ? "Zakelijk" : "Particulier";
   const displayName = initialName || "Stel je naam in";
+  const { reviews, average } = await loadReceivedReviews(user.id);
 
   return (
     <>
@@ -51,7 +47,11 @@ export default async function AccountPage() {
 
         <div className="account-grid">
           <aside className="account-card account-summary">
-            <div className="account-avatar" aria-hidden="true">{initialsFrom(initialName, user.email ?? "")}</div>
+            <ProfilePhotoForm
+              userId={user.id}
+              displayName={initialName || user.email || "Gebruiker"}
+              initialPath={profile?.avatar_path ?? null}
+            />
             <h2>{displayName}</h2>
             <p className="account-email">{user.email}</p>
             <span className="account-badge">Actief account</span>
@@ -71,6 +71,33 @@ export default async function AccountPage() {
           </aside>
 
           <div className="account-main">
+            <section className="account-card">
+              <h2>Beoordelingen</h2>
+              {average !== null ? (
+                <>
+                  <div className="account-rating">
+                    <Stars value={Math.round(average)} size={20} />
+                    <strong>{average.toFixed(1)}</strong>
+                    <span>{reviews.length} {reviews.length === 1 ? "beoordeling" : "beoordelingen"}</span>
+                  </div>
+                  <ul className="review-list review-list-compact">
+                    {reviews.slice(0, 5).map((review) => (
+                      <li key={review.id} className="review-card">
+                        <header>
+                          <strong>{review.reviewerName}</strong>
+                          <Stars value={review.rating} size={14} />
+                          <span>{new Date(review.createdAt).toLocaleDateString("nl-NL")}</span>
+                        </header>
+                        {review.comment && <p>{review.comment}</p>}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <p className="account-muted">Je hebt nog geen beoordelingen ontvangen.</p>
+              )}
+            </section>
+
             <section className="account-card">
               <h2>Profiel</h2>
               <p className="account-muted">Deze naam wordt getoond bij je verzoeken.</p>

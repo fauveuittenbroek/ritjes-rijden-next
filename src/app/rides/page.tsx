@@ -59,7 +59,7 @@ export default async function RidesPage({ searchParams }: { searchParams: Search
             : (
               <>
                 Je kunt alle ritjes bekijken zonder in te loggen. Om zelf een ritje te plaatsen of te accepteren moet je{" "}
-                <Link href="/login">ingelogd</Link> zijn.
+                <HomeAuthButton mode="login" className="inline-link">ingelogd</HomeAuthButton> zijn.
               </>
             )}
         </p>
