@@ -14,6 +14,10 @@ type AccountType = "particulier" | "zakelijk";
 
 const LEGAL_VERSION = "1.0";
 
+function getOAuthRedirectUrl(): string {
+  return `${window.location.origin}/auth/callback`;
+}
+
 const HomeAuthContext = createContext<{ open: (mode: AuthMode) => void } | null>(null);
 
 export function HomeAuthProvider({
@@ -210,7 +214,7 @@ function HomeAuthDialog({ initialMode, onClose }: { initialMode: AuthMode; onClo
     try {
       const { error } = await client.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: `${window.location.origin}/auth/callback` },
+        options: { redirectTo: getOAuthRedirectUrl() },
       });
       if (error) {
         setMessage("Inloggen met Google is niet gelukt. Probeer het later opnieuw of gebruik je e-mailadres.");
