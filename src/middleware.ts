@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-const CANONICAL_ORIGIN = "https://ritjes.com";
+const CANONICAL_ORIGIN = "https://www.ritjes.com";
 
 export function middleware(request: NextRequest) {
   const hostname = request.nextUrl.hostname.toLowerCase();

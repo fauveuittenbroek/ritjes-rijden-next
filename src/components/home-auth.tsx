@@ -52,7 +52,7 @@ export function HomeAuthButton({
       className={className}
       onClick={() => {
         if (window.location.hostname.endsWith(".netlify.app")) {
-          const url = new URL("/login", "https://ritjes.com");
+          const url = new URL("/login", "https://www.ritjes.com");
           url.searchParams.set("mode", mode);
           window.location.assign(url.toString());
           return;
