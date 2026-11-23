@@ -22,8 +22,8 @@ export async function SiteHeader({ showAuth = true }: { showAuth?: boolean }) {
           </>
         ) : (
           <>
-            <Link href="/login" className="site-auth-ghost">Inloggen</Link>
-            <Link href="/login" className="site-auth-primary">Account aanmaken</Link>
+            <Link href="/login?mode=login" className="site-auth-ghost">Inloggen</Link>
+            <Link href="/login?mode=register" className="site-auth-primary">Account aanmaken</Link>
           </>
         ))}
       </nav>
