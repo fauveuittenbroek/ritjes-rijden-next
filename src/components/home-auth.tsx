@@ -23,15 +23,17 @@ const HomeAuthContext = createContext<{ open: (mode: AuthMode) => void } | null>
 export function HomeAuthProvider({
   children,
   initialMode = null,
+  initialError = "",
 }: {
   children: ReactNode;
   initialMode?: AuthMode | null;
+  initialError?: string;
 }) {
   const [mode, setMode] = useState<AuthMode | null>(initialMode);
   return (
     <HomeAuthContext.Provider value={{ open: setMode }}>
       {children}
-      {mode && <HomeAuthDialog key={mode} initialMode={mode} onClose={() => setMode(null)} />}
+      {mode && <HomeAuthDialog key={mode} initialMode={mode} initialError={initialError} onClose={() => setMode(null)} />}
     </HomeAuthContext.Provider>
   );
 }
@@ -65,12 +67,12 @@ export function HomeAuthButton({
   );
 }
 
-function HomeAuthDialog({ initialMode, onClose }: { initialMode: AuthMode; onClose: () => void }) {
+function HomeAuthDialog({ initialMode, initialError, onClose }: { initialMode: AuthMode; initialError: string; onClose: () => void }) {
   const router = useRouter();
   const [client] = useState(() => createClient());
   const [tab, setTab] = useState<AuthMode>(initialMode);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(initialError);
   const [canResend, setCanResend] = useState(false);
 
   const [loginEmail, setLoginEmail] = useState("");
