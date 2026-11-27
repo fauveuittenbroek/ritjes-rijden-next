@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useFeatureAuth } from "@/components/feature-auth";
 import type { RequestFormInitial } from "@/components/request-form-types";
@@ -100,6 +100,7 @@ export function RequestForm({
   const [deadline, setDeadline] = useState(toDateInputValue(initial?.deadline ?? null));
   const [rideDate, setRideDate] = useState(scheduledInitial.date);
   const [rideTime, setRideTime] = useState(scheduledInitial.time);
+  const datePickerRef = useRef<HTMLInputElement>(null);
   const [origin, setOrigin] = useState(initial?.vertrekplaats ?? "");
   const [destination, setDestination] = useState(initial?.bestemming ?? "");
   const [pickup, setPickup] = useState(initial?.ophaaladres ?? "");
@@ -331,16 +332,46 @@ export function RequestForm({
 
             <label htmlFor="request-ride-date">Wanneer?</label>
             <div className="datetime-row">
-              <input
-                id="request-ride-date"
-                type="text"
-                inputMode="numeric"
-                aria-label="Datum (dd-mm-jjjj)"
-                placeholder="dd-mm-jjjj"
-                autoComplete="off"
-                value={rideDate}
-                onChange={(event) => setRideDate(event.target.value)}
-              />
+              <div className="date-input-wrap">
+                <input
+                  id="request-ride-date"
+                  type="text"
+                  inputMode="numeric"
+                  aria-label="Datum (dd-mm-jjjj)"
+                  placeholder="dd-mm-jjjj"
+                  autoComplete="off"
+                  value={rideDate}
+                  onChange={(event) => setRideDate(event.target.value)}
+                />
+                <button
+                  type="button"
+                  className="calendar-button"
+                  aria-label="Kies een datum uit de kalender"
+                  onClick={() => {
+                    const picker = datePickerRef.current;
+                    if (!picker) return;
+                    if (typeof picker.showPicker === "function") picker.showPicker();
+                    else picker.click();
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="3" y="5" width="18" height="16" rx="2" />
+                    <path d="M16 3v4M8 3v4M3 11h18" />
+                  </svg>
+                </button>
+                <input
+                  ref={datePickerRef}
+                  type="date"
+                  className="calendar-input"
+                  tabIndex={-1}
+                  aria-hidden="true"
+                  value={/^\d{2}-\d{2}-\d{4}$/.test(rideDate) ? rideDate.split("-").reverse().join("-") : ""}
+                  onChange={(event) => {
+                    const [year, month, day] = event.target.value.split("-");
+                    if (year && month && day) setRideDate(`${day}-${month}-${year}`);
+                  }}
+                />
+              </div>
               <input
                 type="text"
                 inputMode="numeric"
@@ -413,7 +444,7 @@ export function RequestForm({
           onChange={(event) => setBy(event.target.value)}
         />
 
-        <label htmlFor="request-price">Prijs (€)</label>
+        <label htmlFor="request-price">Vergoeding (€)</label>
         <input
           id="request-price"
           type="number"

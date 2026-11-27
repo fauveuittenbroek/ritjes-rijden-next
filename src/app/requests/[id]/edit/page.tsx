@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { requireSiteAccess } from "@/lib/access";
 import { AUTH_REQUEST_COLUMNS, rideFromRequest } from "@/lib/rides";
 import { EditRequestForm } from "@/components/edit-request-form";
 import { SiteHeader } from "@/components/site-header";
@@ -12,9 +13,9 @@ type Params = Promise<{ id: string }>;
 
 export default async function EditRequestPage({ params }: { params: Params }) {
   const { id } = await params;
+  const access = await requireSiteAccess(`/requests/${id}/edit`);
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const user = { id: access.userId };
 
   const { data, error } = await supabase.from("requests").select(AUTH_REQUEST_COLUMNS).eq("id", id).maybeSingle();
   if (error || !data || data.created_by !== user.id || data.status !== "open") notFound();

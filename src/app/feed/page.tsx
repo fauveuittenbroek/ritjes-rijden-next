@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { requireSiteAccess } from "@/lib/access";
 import { createClient } from "@/lib/supabase/server";
 import { matchesLocation } from "@/lib/rides";
 import { RideThumb } from "@/components/ride-thumb";
@@ -12,16 +12,14 @@ export const metadata: Metadata = { title: "Overzicht · Ritjes Rijden" };
 type SearchParams = Promise<{ q?: string | string[]; confirmed?: string | string[] }>;
 
 export default async function FeedPage({ searchParams }: { searchParams: SearchParams }) {
+  const access = await requireSiteAccess("/feed");
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
   const params = await searchParams;
   const rawQuery = params.q;
   const query = (Array.isArray(rawQuery) ? rawQuery[0] : rawQuery)?.trim() ?? "";
   const rawConfirmed = params.confirmed;
   const confirmed = (Array.isArray(rawConfirmed) ? rawConfirmed[0] : rawConfirmed) === "1";
-  const rides = (await loadPublicRides({ supabase, userId: user.id }))
+  const rides = (await loadPublicRides({ supabase, userId: access.userId }))
     .filter(isStillVisible)
     .filter((ride) => matchesLocation(ride, query))
     .sort((a, b) => {

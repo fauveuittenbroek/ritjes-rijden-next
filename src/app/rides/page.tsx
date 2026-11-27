@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { requireSiteAccess } from "@/lib/access";
 import { matchesLocation } from "@/lib/rides";
 import { RideThumb } from "@/components/ride-thumb";
 import { HomeAuthButton, HomeAuthProvider } from "@/components/home-auth";
@@ -12,6 +13,7 @@ export const metadata: Metadata = { title: "Bekijk ritjes · Ritjes Rijden" };
 type SearchParams = Promise<{ q?: string | string[] }>;
 
 export default async function RidesPage({ searchParams }: { searchParams: SearchParams }) {
+  await requireSiteAccess("/rides");
   const params = await searchParams;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

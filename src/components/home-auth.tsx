@@ -14,8 +14,18 @@ type AccountType = "particulier" | "zakelijk";
 
 const LEGAL_VERSION = "1.0";
 
+function isLocalHost(hostname: string): boolean {
+  return hostname === "localhost" || hostname === "127.0.0.1";
+}
+
+function nextPath(value: string | undefined): string {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) return "/feed";
+  return value;
+}
+
 function getOAuthRedirectUrl(): string {
-  return `${window.location.origin}/auth/callback`;
+  if (isLocalHost(window.location.hostname)) return `${window.location.origin}/auth/callback`;
+  return "https://www.ritjes.com/auth/callback";
 }
 
 const HomeAuthContext = createContext<{ open: (mode: AuthMode) => void } | null>(null);
@@ -24,16 +34,29 @@ export function HomeAuthProvider({
   children,
   initialMode = null,
   initialError = "",
+  next,
+  allowRegistration = true,
 }: {
   children: ReactNode;
   initialMode?: AuthMode | null;
   initialError?: string;
+  next?: string;
+  allowRegistration?: boolean;
 }) {
   const [mode, setMode] = useState<AuthMode | null>(initialMode);
   return (
     <HomeAuthContext.Provider value={{ open: setMode }}>
       {children}
-      {mode && <HomeAuthDialog key={mode} initialMode={mode} initialError={initialError} onClose={() => setMode(null)} />}
+      {mode && (
+        <HomeAuthDialog
+          key={mode}
+          initialMode={mode}
+          initialError={initialError}
+          next={next}
+          allowRegistration={allowRegistration}
+          onClose={() => setMode(null)}
+        />
+      )}
     </HomeAuthContext.Provider>
   );
 }
@@ -53,7 +76,8 @@ export function HomeAuthButton({
       type="button"
       className={className}
       onClick={() => {
-        if (window.location.hostname.endsWith(".netlify.app")) {
+        const hostname = window.location.hostname;
+        if (!isLocalHost(hostname) && hostname !== "www.ritjes.com") {
           const url = new URL("/login", "https://www.ritjes.com");
           url.searchParams.set("mode", mode);
           window.location.assign(url.toString());
@@ -67,7 +91,19 @@ export function HomeAuthButton({
   );
 }
 
-function HomeAuthDialog({ initialMode, initialError, onClose }: { initialMode: AuthMode; initialError: string; onClose: () => void }) {
+function HomeAuthDialog({
+  initialMode,
+  initialError,
+  next,
+  allowRegistration,
+  onClose,
+}: {
+  initialMode: AuthMode;
+  initialError: string;
+  next?: string;
+  allowRegistration: boolean;
+  onClose: () => void;
+}) {
   const router = useRouter();
   const [client] = useState(() => createClient());
   const [tab, setTab] = useState<AuthMode>(initialMode);
@@ -138,7 +174,7 @@ function HomeAuthDialog({ initialMode, initialError, onClose }: { initialMode: A
         return;
       }
       onClose();
-      router.replace("/feed");
+      router.replace(nextPath(next));
       router.refresh();
     } catch {
       setMessage(networkErrorMessage);
@@ -186,7 +222,7 @@ function HomeAuthDialog({ initialMode, initialError, onClose }: { initialMode: A
       }
       if (data.session) {
         onClose();
-        router.replace("/feed");
+        router.replace(nextPath(next));
         router.refresh();
         return;
       }
@@ -228,7 +264,7 @@ function HomeAuthDialog({ initialMode, initialError, onClose }: { initialMode: A
     try {
       const { error } = await client.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: getOAuthRedirectUrl() },
+        options: { redirectTo: getOAuthRedirectUrl() + (next ? `?next=${encodeURIComponent(nextPath(next))}` : "") },
       });
       if (error) {
         setMessage("Inloggen met Google is niet gelukt. Probeer het later opnieuw of gebruik je e-mailadres.");
@@ -337,7 +373,9 @@ function HomeAuthDialog({ initialMode, initialError, onClose }: { initialMode: A
               </button>
             )}
 
-            <p className="home-auth-alt">Nog geen account? <button type="button" onClick={() => switchTab("register")}>Registreer hier</button></p>
+            {allowRegistration && (
+              <p className="home-auth-alt">Nog geen account? <button type="button" onClick={() => switchTab("register")}>Registreer hier</button></p>
+            )}
             <p className="home-auth-note">Je e-mailadres en telefoonnummer zijn niet openbaar zichtbaar.</p>
           </section>
         ) : confirmation ? (

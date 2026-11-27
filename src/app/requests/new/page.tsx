@@ -1,18 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { requireSiteAccess } from "@/lib/access";
 import { RequestForm } from "@/components/request-form";
 import { SiteHeader } from "@/components/site-header";
-import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Nieuw verzoek · Ritjes.com" };
 
 export default async function NewRequestPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  await requireSiteAccess("/requests/new");
 
   return (
     <>

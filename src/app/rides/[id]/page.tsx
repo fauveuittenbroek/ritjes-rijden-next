@@ -11,6 +11,7 @@ import { CounterOfferForm } from "@/components/counter-offer-form";
 import { OfferCard } from "@/components/offer-card";
 import { geocodePlace } from "@/lib/geocode";
 import { distanceBetween } from "@/lib/distance";
+import { requireSiteAccess } from "@/lib/access";
 import { AcceptRideButton } from "@/components/accept-ride-button";
 import { CompleteRideButton } from "@/components/complete-ride-button";
 import { DeleteRideButton } from "@/components/delete-ride-button";
@@ -103,6 +104,7 @@ async function RideMapSection({ ride }: { ride: Ride }) {
 
 export default async function RidePage({ params }: { params: Params }) {
   const { id } = await params;
+  await requireSiteAccess(`/rides/${id}`);
   const { ride, isAuthed } = await loadRide(id);
   if (!ride) notFound();
   const supabase = await createClient();
